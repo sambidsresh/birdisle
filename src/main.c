@@ -1,4 +1,4 @@
-int redisMain(int argc, char **argv);
+#include "server.h"
 
 int main(int argc, char **argv)
 {
