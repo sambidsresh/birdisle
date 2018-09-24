@@ -3879,7 +3879,10 @@ void redisOutOfMemoryHandler(size_t allocation_size) {
 }
 
 void redisSetProcTitle(char *title) {
-#ifdef USE_SETPROCTITLE
+#if 0
+    /* Disabled because it doesn't play nice with embedding.
+     * #ifdef USE_SETPROCTITLE
+     */
     char *server_mode = "";
     if (server.cluster_enabled) server_mode = " [cluster]";
     else if (server.sentinel_mode) server_mode = " [sentinel]";
