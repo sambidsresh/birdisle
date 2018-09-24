@@ -3990,7 +3990,7 @@ int redisIsSupervised(int mode) {
 }
 
 
-int main(int argc, char **argv) {
+int redisMain(int argc, char **argv) {
     struct timeval tv;
     int j;
 
