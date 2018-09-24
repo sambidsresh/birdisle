@@ -1689,7 +1689,7 @@ int zslLexValueLteMax(sds value, zlexrangespec *spec);
 
 /* Core functions */
 int getMaxmemoryState(size_t *total, size_t *logical, size_t *tofree, float *level);
-size_t freeMemoryGetNotCountedMemory();
+size_t freeMemoryGetNotCountedMemory(void);
 int freeMemoryIfNeeded(void);
 int processCommand(client *c);
 void setupSignalHandlers(void);
@@ -1703,7 +1703,7 @@ void forceCommandPropagation(client *c, int flags);
 void preventCommandPropagation(client *c);
 void preventCommandAOF(client *c);
 void preventCommandReplication(client *c);
-int prepareForShutdown();
+int prepareForShutdown(int flags);
 #ifdef __GNUC__
 void serverLog(int level, const char *fmt, ...)
     __attribute__((format(printf, 2, 3)));
