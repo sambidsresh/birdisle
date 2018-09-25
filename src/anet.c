@@ -656,3 +656,11 @@ int anetFormatSock(int fd, char *fmt, size_t fmt_len) {
     anetSockName(fd,ip,sizeof(ip),&port);
     return anetFormatAddr(fmt, fmt_len, ip, port);
 }
+
+int anetUnixSocketpair(char *err, int type, int sv[2]) {
+    if (socketpair(AF_UNIX,type,0,sv) == -1) {
+        anetSetError(err, "socketpair: %s", strerror(errno));
+        return ANET_ERR;
+    }
+    return ANET_OK;
+}

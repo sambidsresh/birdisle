@@ -965,6 +965,8 @@ struct redisServer {
     int ipfd[CONFIG_BINDADDR_MAX]; /* TCP socket file descriptors */
     int ipfd_count;             /* Used slots in ipfd[] */
     int sofd;                   /* Unix socket file descriptor */
+    int metafd_recv;            /* Receive side of metasocket */
+    int metafd_send;            /* Send side of metasocket */
     int cfd[CONFIG_BINDADDR_MAX];/* Cluster bus listening socket */
     int cfd_count;              /* Used slots in cfd[] */
     list *clients;              /* List of active clients */
@@ -1422,6 +1424,7 @@ void processInputBufferAndReplicate(client *c);
 void acceptHandler(aeEventLoop *el, int fd, void *privdata, int mask);
 void acceptTcpHandler(aeEventLoop *el, int fd, void *privdata, int mask);
 void acceptUnixHandler(aeEventLoop *el, int fd, void *privdata, int mask);
+void readMetaHandler(aeEventLoop *el, int fd, void *privdata, int mask);
 void readQueryFromClient(aeEventLoop *el, int fd, void *privdata, int mask);
 void addReplyString(client *c, const char *s, size_t len);
 void addReplyBulk(client *c, robj *obj);
@@ -2137,7 +2140,5 @@ void xorDigest(unsigned char *digest, void *ptr, size_t len);
     printf("DEBUG %s:%d > " fmt "\n", __FILE__, __LINE__, __VA_ARGS__)
 #define redisDebugMark() \
     printf("-- MARK %s:%d --\n", __FILE__, __LINE__)
-
-int redisMain(int argc, char **argv);
 
 #endif

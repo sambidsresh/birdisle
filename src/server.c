@@ -1538,6 +1538,8 @@ void initServerConfig(void) {
     server.unixsocketperm = CONFIG_DEFAULT_UNIX_SOCKET_PERM;
     server.ipfd_count = 0;
     server.sofd = -1;
+    server.metafd_recv = -1;
+    server.metafd_send = -1;
     server.protected_mode = CONFIG_DEFAULT_PROTECTED_MODE;
     server.dbnum = CONFIG_DEFAULT_DBNUM;
     server.verbosity = CONFIG_DEFAULT_VERBOSITY;
@@ -2060,6 +2062,18 @@ void initServer(void) {
         anetNonBlock(NULL,server.sofd);
     }
 
+    /* Open the Unix domain metasocket */
+    {
+        int sv[2];
+        if (anetUnixSocketpair(server.neterr,SOCK_DGRAM,sv) == ANET_ERR) {
+            serverLog(LL_WARNING, "Opening metasocket: %s", server.neterr);
+            exit(1);
+        }
+        server.metafd_recv = sv[0];
+        server.metafd_send = sv[1];
+        anetNonBlock(NULL,server.metafd_recv);
+    }
+
     /* Abort if there are no listening sockets at all. */
     if (server.ipfd_count == 0 && server.sofd < 0) {
         serverLog(LL_WARNING, "Configured to not listen anywhere, exiting.");
@@ -2133,6 +2147,8 @@ void initServer(void) {
     }
     if (server.sofd > 0 && aeCreateFileEvent(server.el,server.sofd,AE_READABLE,
         acceptUnixHandler,NULL) == AE_ERR) serverPanic("Unrecoverable error creating server.sofd file event.");
+    if (server.metafd_recv >= 0 && aeCreateFileEvent(server.el,server.metafd_recv,AE_READABLE,
+        readMetaHandler,NULL) == AE_ERR) serverPanic("Unrecoverable error creating server.metafd_recv file event.");
 
 
     /* Register a readable event for the pipe used to awake the event loop

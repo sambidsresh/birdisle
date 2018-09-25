@@ -751,6 +751,31 @@ void acceptUnixHandler(aeEventLoop *el, int fd, void *privdata, int mask) {
     }
 }
 
+void readMetaHandler(aeEventLoop *el, int fd, void *privdata, int mask) {
+    int cfd, max = MAX_ACCEPTS_PER_CALL;
+    UNUSED(el);
+    UNUSED(mask);
+    UNUSED(privdata);
+
+    while(max--) {
+        if (read(fd, &cfd, sizeof(cfd)) != sizeof(cfd)) {
+            if (errno != EWOULDBLOCK)
+                serverLog(LL_WARNING,
+                    "Accepting client connection: %s", strerror(errno));
+            return;
+        }
+        serverLog(LL_VERBOSE,"Accepted connection via metasocket");
+        acceptCommonHandler(cfd,CLIENT_UNIX_SOCKET,NULL);
+    }
+}
+
+int redisAddSocket(int fd) {
+    if (write(server.metafd_send, &fd, sizeof(fd)) != sizeof(fd))
+        return -1;
+    else
+        return 0;
+}
+
 static void freeClientArgv(client *c) {
     int j;
     for (j = 0; j < c->argc; j++)
