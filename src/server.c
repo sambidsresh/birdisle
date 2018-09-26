@@ -2067,7 +2067,7 @@ void initServer(void) {
     }
 
     /* Abort if there are no listening sockets at all. */
-    if (server.ipfd_count == 0 && server.sofd < 0) {
+    if (server.ipfd_count == 0 && server.sofd < 0 && server.metafd < 0) {
         serverLog(LL_WARNING, "Configured to not listen anywhere, exiting.");
         exit(1);
     }
