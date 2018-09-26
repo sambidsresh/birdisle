@@ -9,8 +9,8 @@ redis-check-dump
 redis-cli
 redis-sentinel
 redis-server
-libredis.so
-libredis.so.1
+libbirdisle.so
+libbirdisle.so.1
 doc-tools
 release
 misc/*

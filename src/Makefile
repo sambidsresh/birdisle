@@ -26,6 +26,8 @@ OPT=$(OPTIMIZATION)
 
 PREFIX?=/usr/local
 INSTALL_BIN=$(PREFIX)/bin
+INSTALL_LIB=$(PREFIX)/lib
+INSTALL_INCLUDE=$(PREFIX)/include
 INSTALL=install
 LN_S=ln -s
 
@@ -141,8 +143,8 @@ endif
 REDIS_SERVER_NAME=redis-server
 REDIS_SENTINEL_NAME=redis-sentinel
 REDIS_SERVER_OBJ=main.o
-REDIS_LIB_NAME=libredis.so
-REDIS_LIB_SONAME=libredis.so.1
+REDIS_LIB_NAME=libbirdisle.so
+REDIS_LIB_SONAME=libbirdisle.so.1
 REDIS_LIB_OBJ=adlist.o quicklist.o ae.o anet.o dict.o server.o sds.o zmalloc.o lzf_c.o lzf_d.o pqsort.o zipmap.o sha1.o ziplist.o release.o networking.o util.o object.o db.o replication.o rdb.o t_string.o t_list.o t_set.o t_zset.o t_hash.o config.o aof.o pubsub.o multi.o debug.o sort.o intset.o syncio.o cluster.o crc16.o endianconv.o slowlog.o scripting.o bio.o rio.o rand.o memtest.o crc64.o bitops.o sentinel.o notify.o setproctitle.o blocked.o hyperloglog.o latency.o sparkline.o redis-check-rdb.o redis-check-aof.o geo.o lazyfree.o module.o evict.o expire.o geohash.o geohash_helper.o childinfo.o defrag.o siphash.o rax.o t_stream.o listpack.o localtime.o
 REDIS_CLI_NAME=redis-cli
 REDIS_CLI_OBJ=anet.o adlist.o dict.o redis-cli.o zmalloc.o release.o anet.o ae.o crc64.o siphash.o crc16.o
@@ -201,11 +203,11 @@ $(REDIS_SERVER_NAME): $(REDIS_SERVER_OBJ) $(REDIS_LIB_NAME)
 $(REDIS_SENTINEL_NAME): $(REDIS_SERVER_NAME)
 	$(REDIS_INSTALL) $(REDIS_SERVER_NAME) $(REDIS_SENTINEL_NAME)
 
-# libredis.so
+# libbirdisle.so
 $(REDIS_LIB_NAME): $(REDIS_LIB_OBJ)
 	$(REDIS_LD) -shared -Wl,-soname,$(REDIS_LIB_SONAME) -o $@ $^ ../deps/hiredis/libhiredis.a ../deps/lua/src/liblua.a $(FINAL_LIBS)
 
-# libredis.so.1
+# libbirdisle.so.1
 $(REDIS_LIB_SONAME):
 	$(REDIS_LN_S) $(REDIS_LIB_NAME) $(REDIS_LIB_SONAME)
 
@@ -290,10 +292,13 @@ src/help.h:
 	@../utils/generate-command-help.rb > help.h
 
 install: all
-	@mkdir -p $(INSTALL_BIN)
+	@mkdir -p $(INSTALL_BIN) $(INSTALL_LIB) $(INSTALL_INCLUDE)
 	$(REDIS_INSTALL) $(REDIS_SERVER_NAME) $(INSTALL_BIN)
 	$(REDIS_INSTALL) $(REDIS_BENCHMARK_NAME) $(INSTALL_BIN)
 	$(REDIS_INSTALL) $(REDIS_CLI_NAME) $(INSTALL_BIN)
 	$(REDIS_INSTALL) $(REDIS_CHECK_RDB_NAME) $(INSTALL_BIN)
 	$(REDIS_INSTALL) $(REDIS_CHECK_AOF_NAME) $(INSTALL_BIN)
+	$(REDIS_INSTALL) $(REDIS_LIB_NAME) $(INSTALL_LIB)
+	$(REDIS_INSTALL) $(REDIS_LIB_SONAME) $(INSTALL_LIB)
+	$(REDIS_INSTALL) birdisle.h $(INSTALL_INCLUDE)
 	@ln -sf $(REDIS_SERVER_NAME) $(INSTALL_BIN)/$(REDIS_SENTINEL_NAME)
