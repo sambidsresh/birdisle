@@ -27,6 +27,7 @@ OPT=$(OPTIMIZATION)
 PREFIX?=/usr/local
 INSTALL_BIN=$(PREFIX)/bin
 INSTALL=install
+LN_S=ln -s
 
 # Default allocator defaults to libc
 MALLOC=libc
@@ -121,6 +122,7 @@ endif
 REDIS_CC=$(QUIET_CC)$(CC) $(FINAL_CFLAGS)
 REDIS_LD=$(QUIET_LINK)$(CC) $(FINAL_LDFLAGS)
 REDIS_INSTALL=$(QUIET_INSTALL)$(INSTALL)
+REDIS_LN_S=$(QUIET_LN_S)$(LN_S)
 
 CCCOLOR="\033[34m"
 LINKCOLOR="\033[34;1m"
@@ -133,6 +135,7 @@ ifndef V
 QUIET_CC = @printf '    %b %b\n' $(CCCOLOR)CC$(ENDCOLOR) $(SRCCOLOR)$@$(ENDCOLOR) 1>&2;
 QUIET_LINK = @printf '    %b %b\n' $(LINKCOLOR)LINK$(ENDCOLOR) $(BINCOLOR)$@$(ENDCOLOR) 1>&2;
 QUIET_INSTALL = @printf '    %b %b\n' $(LINKCOLOR)INSTALL$(ENDCOLOR) $(BINCOLOR)$@$(ENDCOLOR) 1>&2;
+QUIET_LN_S = @printf '    %b %b\n' $(LINKCOLOR)LN$(ENDCOLOR) $(BINCOLOR)$@$(ENDCOLOR) 1>&2;
 endif
 
 REDIS_SERVER_NAME=redis-server
@@ -148,7 +151,7 @@ REDIS_BENCHMARK_OBJ=ae.o anet.o redis-benchmark.o adlist.o zmalloc.o redis-bench
 REDIS_CHECK_RDB_NAME=redis-check-rdb
 REDIS_CHECK_AOF_NAME=redis-check-aof
 
-all: $(REDIS_SERVER_NAME) $(REDIS_SENTINEL_NAME) $(REDIS_LIB_NAME) $(REDIS_CLI_NAME) $(REDIS_BENCHMARK_NAME) $(REDIS_CHECK_RDB_NAME) $(REDIS_CHECK_AOF_NAME)
+all: $(REDIS_SERVER_NAME) $(REDIS_SENTINEL_NAME) $(REDIS_LIB_NAME) $(REDIS_LIB_SONAME) $(REDIS_CLI_NAME) $(REDIS_BENCHMARK_NAME) $(REDIS_CHECK_RDB_NAME) $(REDIS_CHECK_AOF_NAME)
 	@echo ""
 	@echo "Hint: It's a good idea to run 'make test' ;)"
 	@echo ""
@@ -201,6 +204,10 @@ $(REDIS_SENTINEL_NAME): $(REDIS_SERVER_NAME)
 # libredis.so
 $(REDIS_LIB_NAME): $(REDIS_LIB_OBJ)
 	$(REDIS_LD) -shared -Wl,-soname,$(REDIS_LIB_SONAME) -o $@ $^ ../deps/hiredis/libhiredis.a ../deps/lua/src/liblua.a $(FINAL_LIBS)
+
+# libredis.so.1
+$(REDIS_LIB_SONAME):
+	$(REDIS_LN_S) $(REDIS_LIB_NAME) $(REDIS_LIB_SONAME)
 
 # redis-check-rdb
 $(REDIS_CHECK_RDB_NAME): $(REDIS_SERVER_NAME)
