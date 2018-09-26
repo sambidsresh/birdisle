@@ -10,7 +10,7 @@ redis-cli
 redis-sentinel
 redis-server
 libbirdisle.so
-libbirdisle.so.1
+libbirdisle.so.*
 doc-tools
 release
 misc/*
