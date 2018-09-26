@@ -769,13 +769,6 @@ void readMetaHandler(aeEventLoop *el, int fd, void *privdata, int mask) {
     }
 }
 
-int redisAddSocket(int fd) {
-    if (write(server.metafd_send, &fd, sizeof(fd)) != sizeof(fd))
-        return -1;
-    else
-        return 0;
-}
-
 static void freeClientArgv(client *c) {
     int j;
     for (j = 0; j < c->argc; j++)

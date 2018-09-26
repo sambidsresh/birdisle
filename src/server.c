@@ -1538,8 +1538,7 @@ void initServerConfig(void) {
     server.unixsocketperm = CONFIG_DEFAULT_UNIX_SOCKET_PERM;
     server.ipfd_count = 0;
     server.sofd = -1;
-    server.metafd_recv = -1;
-    server.metafd_send = -1;
+    server.metafd = -1;
     server.protected_mode = CONFIG_DEFAULT_PROTECTED_MODE;
     server.dbnum = CONFIG_DEFAULT_DBNUM;
     server.verbosity = CONFIG_DEFAULT_VERBOSITY;
@@ -2062,16 +2061,9 @@ void initServer(void) {
         anetNonBlock(NULL,server.sofd);
     }
 
-    /* Open the Unix domain metasocket */
-    {
-        int sv[2];
-        if (anetUnixSocketpair(server.neterr,SOCK_DGRAM,sv) == ANET_ERR) {
-            serverLog(LL_WARNING, "Opening metasocket: %s", server.neterr);
-            exit(1);
-        }
-        server.metafd_recv = sv[0];
-        server.metafd_send = sv[1];
-        anetNonBlock(NULL,server.metafd_recv);
+    /* Listen on the metasocket pipe */
+    if (server.metafd >= 0) {
+        anetNonBlock(NULL,server.metafd);
     }
 
     /* Abort if there are no listening sockets at all. */
@@ -2147,8 +2139,8 @@ void initServer(void) {
     }
     if (server.sofd > 0 && aeCreateFileEvent(server.el,server.sofd,AE_READABLE,
         acceptUnixHandler,NULL) == AE_ERR) serverPanic("Unrecoverable error creating server.sofd file event.");
-    if (server.metafd_recv >= 0 && aeCreateFileEvent(server.el,server.metafd_recv,AE_READABLE,
-        readMetaHandler,NULL) == AE_ERR) serverPanic("Unrecoverable error creating server.metafd_recv file event.");
+    if (server.metafd >= 0 && aeCreateFileEvent(server.el,server.metafd,AE_READABLE,
+        readMetaHandler,NULL) == AE_ERR) serverPanic("Unrecoverable error creating server.metafd file event.");
 
 
     /* Register a readable event for the pipe used to awake the event loop
@@ -2755,6 +2747,7 @@ void closeListeningSockets(int unlink_unix_socket) {
         serverLog(LL_NOTICE,"Removing the unix socket file.");
         unlink(server.unixsocket); /* don't care if this fails */
     }
+    if (server.metafd != -1) close(server.metafd);
 }
 
 int prepareForShutdown(int flags) {
@@ -4009,7 +4002,7 @@ int redisIsSupervised(int mode) {
 }
 
 
-int redisMain(int argc, char **argv) {
+int redisMain(int metafd, int argc, char **argv) {
     struct timeval tv;
     int j;
 
@@ -4164,6 +4157,7 @@ int redisMain(int argc, char **argv) {
     int background = server.daemonize && !server.supervised;
     if (background) daemonize();
 
+    server.metafd = metafd;
     initServer();
     if (background || server.pidfile) createPidFile();
     redisSetProcTitle(argv[0]);

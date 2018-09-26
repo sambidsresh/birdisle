@@ -965,8 +965,7 @@ struct redisServer {
     int ipfd[CONFIG_BINDADDR_MAX]; /* TCP socket file descriptors */
     int ipfd_count;             /* Used slots in ipfd[] */
     int sofd;                   /* Unix socket file descriptor */
-    int metafd_recv;            /* Receive side of metasocket */
-    int metafd_send;            /* Send side of metasocket */
+    int metafd;                 /* Pipe/socket which receives socket FDs */
     int cfd[CONFIG_BINDADDR_MAX];/* Cluster bus listening socket */
     int cfd_count;              /* Used slots in cfd[] */
     list *clients;              /* List of active clients */

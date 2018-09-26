@@ -3,5 +3,5 @@
 
 int main(int argc, char **argv)
 {
-    return redisMain(argc, argv);
+    return redisMain(-1, argc, argv);
 }
