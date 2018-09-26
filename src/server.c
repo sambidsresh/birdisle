@@ -2007,9 +2007,11 @@ void resetServerStats(void) {
 void initServer(void) {
     int j;
 
+#if 0 /* Disabled for birdisle */
     signal(SIGHUP, SIG_IGN);
     signal(SIGPIPE, SIG_IGN);
     setupSignalHandlers();
+#endif
 
     if (server.syslog_enabled) {
         openlog(server.syslog_ident, LOG_PID | LOG_NDELAY | LOG_NOWAIT,
@@ -2034,7 +2036,9 @@ void initServer(void) {
     server.system_memory_size = zmalloc_get_memory_size();
 
     createSharedObjects();
+#if 0  /* disabled for birdisle */
     adjustOpenFilesLimit();
+#endif
     server.el = aeCreateEventLoop(server.maxclients+CONFIG_FDSET_INCR);
     if (server.el == NULL) {
         serverLog(LL_WARNING,
@@ -3888,10 +3892,8 @@ void redisOutOfMemoryHandler(size_t allocation_size) {
 }
 
 void redisSetProcTitle(char *title) {
-#if 0
-    /* Disabled because it doesn't play nice with embedding.
-     * #ifdef USE_SETPROCTITLE
-     */
+#if 0   /* Disabled for birdisle */
+#ifdef USE_SETPROCTITLE
     char *server_mode = "";
     if (server.cluster_enabled) server_mode = " [cluster]";
     else if (server.sentinel_mode) server_mode = " [sentinel]";
@@ -3901,6 +3903,7 @@ void redisSetProcTitle(char *title) {
         server.bindaddr_count ? server.bindaddr[0] : "*",
         server.port,
         server_mode);
+#endif
 #else
     UNUSED(title);
 #endif
@@ -4138,6 +4141,7 @@ int redisMain(int metafd, int argc, char **argv) {
         sdsfree(options);
     }
 
+#if 0  /* Disabled for birdisle */
     serverLog(LL_WARNING, "oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo");
     serverLog(LL_WARNING,
         "Redis version=%s, bits=%d, commit=%s, modified=%d, pid=%d, just started",
@@ -4156,19 +4160,24 @@ int redisMain(int metafd, int argc, char **argv) {
     server.supervised = redisIsSupervised(server.supervised_mode);
     int background = server.daemonize && !server.supervised;
     if (background) daemonize();
+#endif
 
     server.metafd = metafd;
     initServer();
+#if 0  /* Disabled for birdisle */
     if (background || server.pidfile) createPidFile();
     redisSetProcTitle(argv[0]);
     redisAsciiArt();
     checkTcpBacklogSettings();
+#endif
 
     if (!server.sentinel_mode) {
+    #if 0   /* Disabled for birdisle */
         /* Things not needed when running in Sentinel mode. */
         serverLog(LL_WARNING,"Server initialized");
     #ifdef __linux__
         linuxMemoryWarnings();
+    #endif
     #endif
         moduleLoadFromQueue();
         loadDataFromDisk();
