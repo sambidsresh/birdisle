@@ -4158,14 +4158,14 @@ int redisMain(int metafd, int argc, char **argv) {
     }
 
     server.supervised = redisIsSupervised(server.supervised_mode);
+#endif
     int background = server.daemonize && !server.supervised;
     if (background) daemonize();
-#endif
 
     server.metafd = metafd;
     initServer();
-#if 0  /* Disabled for birdisle */
     if (background || server.pidfile) createPidFile();
+#if 0  /* Disabled for birdisle */
     redisSetProcTitle(argv[0]);
     redisAsciiArt();
     checkTcpBacklogSettings();
