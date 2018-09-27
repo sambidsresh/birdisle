@@ -258,7 +258,7 @@ void loadServerConfigFromString(char *config) {
             if (chdir(argv[1]) == -1) {
                 serverLog(LL_WARNING,"Can't chdir to '%s': %s",
                     argv[1], strerror(errno));
-                exit(1);
+                exitFromServer(1);
             }
         } else if (!strcasecmp(argv[0],"loglevel") && argc == 2) {
             server.verbosity = configEnumGetValue(loglevel_enum,argv[1]);
@@ -794,7 +794,7 @@ loaderr:
     fprintf(stderr, "Reading the configuration file, at line %d\n", linenum);
     fprintf(stderr, ">>> '%s'\n", lines[i]);
     fprintf(stderr, "%s\n", err);
-    exit(1);
+    exitFromServer(1);
 }
 
 /* Load the server configuration from the specified filename.
@@ -818,7 +818,7 @@ void loadServerConfig(char *filename, char *options) {
             if ((fp = fopen(filename,"r")) == NULL) {
                 serverLog(LL_WARNING,
                     "Fatal error, can't open config file '%s'", filename);
-                exit(1);
+                exitFromServer(1);
             }
         }
         while(fgets(buf,CONFIG_MAX_LINE+1,fp) != NULL)

@@ -295,7 +295,7 @@ static void intsetRepr(intset *is) {
 
 static void error(char *err) {
     printf("%s\n", err);
-    exit(1);
+    exitFromServer(1);
 }
 #endif
 
@@ -309,7 +309,7 @@ static long long usec(void) {
     return (((long long)tv.tv_sec)*1000000)+tv.tv_usec;
 }
 
-#define assert(_e) ((_e)?(void)0:(_assert(#_e,__FILE__,__LINE__),exit(1)))
+#define assert(_e) ((_e)?(void)0:(_assert(#_e,__FILE__,__LINE__),exitFromServer(1)))
 static void _assert(char *estr, char *file, int line) {
     printf("\n\n=== ASSERTION FAILED ===\n");
     printf("==> %s:%d '%s' is not true\n",file,line,estr);

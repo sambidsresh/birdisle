@@ -66,7 +66,7 @@ void rdbCheckThenExit(int linenum, char *reason, ...) {
     } else {
         rdbCheckError("%s",msg);
     }
-    exit(1);
+    exitFromServer(1);
 }
 
 static int rdbWriteRaw(rio *rdb, void *p, size_t len) {
@@ -1761,7 +1761,7 @@ robj *rdbLoadObject(int rdbtype, rio *rdb) {
         if (mt == NULL) {
             moduleTypeNameByID(name,moduleid);
             serverLog(LL_WARNING,"The RDB file contains module data I can't load: no matching module '%s'", name);
-            exit(1);
+            exitFromServer(1);
         }
         RedisModuleIO io;
         moduleInitIOContext(io,mt,rdb);
@@ -1779,14 +1779,14 @@ robj *rdbLoadObject(int rdbtype, rio *rdb) {
             uint64_t eof = rdbLoadLen(rdb,NULL);
             if (eof != RDB_MODULE_OPCODE_EOF) {
                 serverLog(LL_WARNING,"The RDB file contains module data for the module '%s' that is not terminated by the proper module value EOF marker", name);
-                exit(1);
+                exitFromServer(1);
             }
         }
 
         if (ptr == NULL) {
             moduleTypeNameByID(name,moduleid);
             serverLog(LL_WARNING,"The RDB file contains module data for the module type '%s', that the responsible module is not able to load. Check for modules log above for additional clues.", name);
-            exit(1);
+            exitFromServer(1);
         }
         o = createModuleObject(mt,ptr);
     } else {
@@ -1912,7 +1912,7 @@ int rdbLoadRio(rio *rdb, rdbSaveInfo *rsi, int loading_aof) {
                     "FATAL: Data file was created with a Redis "
                     "server configured to handle more than %d "
                     "databases. Exiting\n", server.dbnum);
-                exit(1);
+                exitFromServer(1);
             }
             db = server.db+dbid;
             continue; /* Read next opcode. */
@@ -1987,12 +1987,12 @@ int rdbLoadRio(rio *rdb, rdbSaveInfo *rsi, int loading_aof) {
             if (!rdbCheckMode && mt == NULL) {
                 /* Unknown module. */
                 serverLog(LL_WARNING,"The RDB file contains AUX module data I can't load: no matching module '%s'", name);
-                exit(1);
+                exitFromServer(1);
             } else if (!rdbCheckMode && mt != NULL) {
                 /* This version of Redis actually does not know what to do
                  * with modules AUX data... */
                 serverLog(LL_WARNING,"The RDB file contains AUX module data I can't load for the module '%s'. Probably you want to use a newer version of Redis which implements aux data callbacks", name);
-                exit(1);
+                exitFromServer(1);
             } else {
                 /* RDB check mode. */
                 robj *aux = rdbLoadCheckModuleValue(rdb,name);

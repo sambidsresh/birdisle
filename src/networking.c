@@ -764,8 +764,13 @@ void readMetaHandler(aeEventLoop *el, int fd, void *privdata, int mask) {
                     "Accepting client connection: %s", strerror(errno));
             return;
         }
-        serverLog(LL_VERBOSE,"Accepted connection via metasocket");
-        acceptCommonHandler(cfd,CLIENT_UNIX_SOCKET,NULL);
+        if (cfd < 0) {
+            serverLog(LL_VERBOSE,"Shutting down on request via metasocket");
+            server.shutdown_asap = 1;
+        } else {
+            serverLog(LL_VERBOSE,"Accepted connection %d via metasocket",cfd);
+            acceptCommonHandler(cfd,CLIENT_UNIX_SOCKET,NULL);
+        }
     }
 }
 

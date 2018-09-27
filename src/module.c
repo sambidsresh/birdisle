@@ -3027,7 +3027,7 @@ void moduleRDBLoadError(RedisModuleIO *io) {
         io->type->module->name,
         io->type->name,
         (unsigned long long)io->bytes);
-    exit(1);
+    exitFromServer(1);
 }
 
 /* Save an unsigned 64 bit value into the RDB file. This function should only
@@ -4344,7 +4344,7 @@ void moduleInitModulesSystem(void) {
         serverLog(LL_WARNING,
             "Can't create the pipe for module blocking commands: %s",
             strerror(errno));
-        exit(1);
+        exitFromServer(1);
     }
     /* Make the pipe non blocking. This is just a best effort aware mechanism
      * and we do not want to block not in the read nor in the write half. */
@@ -4381,7 +4381,7 @@ void moduleLoadFromQueue(void) {
             serverLog(LL_WARNING,
                 "Can't load module from %s: server aborting",
                 loadmod->path);
-            exit(1);
+            exitFromServer(1);
         }
     }
 }

@@ -1405,6 +1405,7 @@ long long mstime(void);
 void getRandomHexChars(char *p, size_t len);
 void getRandomBytes(unsigned char *p, size_t len);
 uint64_t crc64(uint64_t crc, const unsigned char *s, uint64_t l);
+void __attribute__((noreturn)) exitFromServer(int retcode);
 void exitFromChild(int retcode);
 size_t redisPopcount(void *s, long count);
 void redisSetProcTitle(char *title);
@@ -2139,5 +2140,7 @@ void xorDigest(unsigned char *digest, void *ptr, size_t len);
     printf("DEBUG %s:%d > " fmt "\n", __FILE__, __LINE__, __VA_ARGS__)
 #define redisDebugMark() \
     printf("-- MARK %s:%d --\n", __FILE__, __LINE__)
+
+int redisMain(int metafd, int argc, char **argv);
 
 #endif

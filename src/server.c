@@ -55,6 +55,7 @@
 #include <sys/utsname.h>
 #include <locale.h>
 #include <sys/socket.h>
+#include <pthread.h>
 
 /* Our shared "common" objects */
 
@@ -433,6 +434,10 @@ long long ustime(void) {
 /* Return the UNIX time in milliseconds */
 mstime_t mstime(void) {
     return ustime()/1000;
+}
+
+void exitFromServer(int retcode) {
+    pthread_exit((void *) (intptr_t) retcode);
 }
 
 /* After an RDB dump or AOF rewrite we exit from children using _exit() instead of
@@ -1168,7 +1173,7 @@ int serverCron(struct aeEventLoop *eventLoop, long long id, void *clientData) {
     /* We received a SIGTERM, shutting down here in a safe way, as it is
      * not ok doing so inside the signal handler. */
     if (server.shutdown_asap) {
-        if (prepareForShutdown(SHUTDOWN_NOFLAGS) == C_OK) exit(0);
+        if (prepareForShutdown(SHUTDOWN_NOFLAGS) == C_OK) exitFromServer(0);
         serverLog(LL_WARNING,"SIGTERM received but errors trying to shut down the server, check the logs for more information");
         server.shutdown_asap = 0;
     }
@@ -1849,7 +1854,7 @@ void adjustOpenFilesLimit(void) {
                         "%llu. Exiting.",
                         (unsigned long long) oldlimit,
                         (unsigned long long) maxfiles);
-                    exit(1);
+                    exitFromServer(1);
                 }
                 serverLog(LL_WARNING,"You requested maxclients of %d "
                     "requiring at least %llu max file descriptors.",
@@ -2044,14 +2049,14 @@ void initServer(void) {
         serverLog(LL_WARNING,
             "Failed creating the event loop. Error message: '%s'",
             strerror(errno));
-        exit(1);
+        exitFromServer(1);
     }
     server.db = zmalloc(sizeof(redisDb)*server.dbnum);
 
     /* Open the TCP listening socket for the user commands. */
     if (server.port != 0 &&
         listenToPort(server.port,server.ipfd,&server.ipfd_count) == C_ERR)
-        exit(1);
+        exitFromServer(1);
 
     /* Open the listening Unix domain socket. */
     if (server.unixsocket != NULL) {
@@ -2060,7 +2065,7 @@ void initServer(void) {
             server.unixsocketperm, server.tcp_backlog);
         if (server.sofd == ANET_ERR) {
             serverLog(LL_WARNING, "Opening Unix socket: %s", server.neterr);
-            exit(1);
+            exitFromServer(1);
         }
         anetNonBlock(NULL,server.sofd);
     }
@@ -2073,7 +2078,7 @@ void initServer(void) {
     /* Abort if there are no listening sockets at all. */
     if (server.ipfd_count == 0 && server.sofd < 0 && server.metafd < 0) {
         serverLog(LL_WARNING, "Configured to not listen anywhere, exiting.");
-        exit(1);
+        exitFromServer(1);
     }
 
     /* Create the Redis databases, and initialize other internal state. */
@@ -2128,7 +2133,7 @@ void initServer(void) {
      * expired keys and so forth. */
     if (aeCreateTimeEvent(server.el, 1, serverCron, NULL, NULL) == AE_ERR) {
         serverPanic("Can't create event loop timers.");
-        exit(1);
+        exitFromServer(1);
     }
 
     /* Create an event handler for accepting new connections in TCP and Unix
@@ -2163,7 +2168,7 @@ void initServer(void) {
         if (server.aof_fd == -1) {
             serverLog(LL_WARNING, "Can't open the append-only file: %s",
                 strerror(errno));
-            exit(1);
+            exitFromServer(1);
         }
     }
 
@@ -3727,7 +3732,7 @@ void version(void) {
         ZMALLOC_LIB,
         sizeof(long) == 4 ? 32 : 64,
         (unsigned long long) redisBuildId());
-    exit(0);
+    exitFromServer(0);
 }
 
 void usage(void) {
@@ -3744,7 +3749,7 @@ void usage(void) {
     fprintf(stderr,"       ./redis-server /etc/myredis.conf --loglevel verbose\n\n");
     fprintf(stderr,"Sentinel mode:\n");
     fprintf(stderr,"       ./redis-server /etc/sentinel.conf --sentinel\n");
-    exit(1);
+    exitFromServer(1);
 }
 
 void redisAsciiArt(void) {
@@ -3804,9 +3809,9 @@ static void sigShutdownHandler(int sig) {
     if (server.shutdown_asap && sig == SIGINT) {
         serverLogFromHandler(LL_WARNING, "You insist... exiting now.");
         rdbRemoveTempFile(getpid());
-        exit(1); /* Exit with an error since this was not a clean shutdown. */
+        exitFromServer(1); /* Exit with an error since this was not a clean shutdown. */
     } else if (server.loading) {
-        exit(0);
+        exitFromServer(0);
     }
 
     serverLogFromHandler(LL_WARNING, msg);
@@ -3880,7 +3885,7 @@ void loadDataFromDisk(void) {
             }
         } else if (errno != ENOENT) {
             serverLog(LL_WARNING,"Fatal error loading the DB: %s. Exiting.",strerror(errno));
-            exit(1);
+            exitFromServer(1);
         }
     }
 }
@@ -4088,11 +4093,11 @@ int redisMain(int metafd, int argc, char **argv) {
         if (strcmp(argv[1], "--test-memory") == 0) {
             if (argc == 3) {
                 memtest(atoi(argv[2]),50);
-                exit(0);
+                exitFromServer(0);
             } else {
                 fprintf(stderr,"Please specify the amount of memory to test in megabytes.\n");
                 fprintf(stderr,"Example: ./redis-server --test-memory 4096\n\n");
-                exit(1);
+                exitFromServer(1);
             }
         }
 
@@ -4134,7 +4139,7 @@ int redisMain(int metafd, int argc, char **argv) {
                 "Sentinel config from STDIN not allowed.");
             serverLog(LL_WARNING,
                 "Sentinel needs config file on disk to save state.  Exiting...");
-            exit(1);
+            exitFromServer(1);
         }
         resetServerSaveParams();
         loadServerConfig(configfile,options);
@@ -4186,7 +4191,7 @@ int redisMain(int metafd, int argc, char **argv) {
                 serverLog(LL_WARNING,
                     "You can't have keys in a DB different than DB 0 when in "
                     "Cluster mode. Exiting.");
-                exit(1);
+                exitFromServer(1);
             }
         }
         if (server.ipfd_count > 0)

@@ -100,7 +100,7 @@ int clusterLoadConfig(char *filename) {
             serverLog(LL_WARNING,
                 "Loading the cluster node config from %s: %s",
                 filename, strerror(errno));
-            exit(1);
+            exitFromServer(1);
         }
     }
 
@@ -294,7 +294,7 @@ fmterr:
         "Unrecoverable error: corrupted cluster config file.");
     zfree(line);
     if (fp) fclose(fp);
-    exit(1);
+    exitFromServer(1);
 }
 
 /* Cluster node configuration is exactly the same as CLUSTER NODES output.
@@ -359,7 +359,7 @@ err:
 void clusterSaveConfigOrDie(int do_fsync) {
     if (clusterSaveConfig(do_fsync) == -1) {
         serverLog(LL_WARNING,"Fatal: can't update cluster config file.");
-        exit(1);
+        exitFromServer(1);
     }
 }
 
@@ -455,7 +455,7 @@ void clusterInit(void) {
     /* Lock the cluster config file to make sure every node uses
      * its own nodes.conf. */
     if (clusterLockConfig(server.cluster_configfile) == C_ERR)
-        exit(1);
+        exitFromServer(1);
 
     /* Load or create a new nodes configuration. */
     if (clusterLoadConfig(server.cluster_configfile) == C_ERR) {
@@ -482,13 +482,13 @@ void clusterInit(void) {
                    "numbers higher than your Redis port. "
                    "Your Redis port number must be "
                    "lower than 55535.");
-        exit(1);
+        exitFromServer(1);
     }
 
     if (listenToPort(server.port+CLUSTER_PORT_INCR,
         server.cfd,&server.cfd_count) == C_ERR)
     {
-        exit(1);
+        exitFromServer(1);
     } else {
         int j;
 

@@ -499,12 +499,12 @@ void sentinelIsRunning(void) {
     if (server.configfile == NULL) {
         serverLog(LL_WARNING,
             "Sentinel started without a config file. Exiting...");
-        exit(1);
+        exitFromServer(1);
     } else if (access(server.configfile,W_OK) == -1) {
         serverLog(LL_WARNING,
             "Sentinel config file %s is not writable: %s. Exiting...",
             server.configfile,strerror(errno));
-        exit(1);
+        exitFromServer(1);
     }
 
     /* If this Sentinel has yet no ID set in the configuration file, we
@@ -3753,7 +3753,7 @@ void sentinelAskMasterStateToOtherSentinels(sentinelRedisInstance *master, int f
 void sentinelSimFailureCrash(void) {
     serverLog(LL_WARNING,
         "Sentinel CRASH because of SENTINEL simulate-failure");
-    exit(99);
+    exitFromServer(99);
 }
 
 /* Vote for the sentinel with 'req_runid' or return the old vote if already

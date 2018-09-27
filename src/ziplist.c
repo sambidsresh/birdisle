@@ -1332,7 +1332,7 @@ static unsigned char *pop(unsigned char *zl, int where) {
         return ziplistDelete(zl,&p);
     } else {
         printf("ERROR: Could not pop\n");
-        exit(1);
+        exitFromServer(1);
     }
 }
 

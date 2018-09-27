@@ -433,7 +433,7 @@ void flushAppendOnlyFile(int force) {
              * have the contract with the user that on acknowledged write data
              * is synced on disk. */
             serverLog(LL_WARNING,"Can't recover from AOF write error when the AOF fsync policy is 'always'. Exiting...");
-            exit(1);
+            exitFromServer(1);
         } else {
             /* Recover from failed write leaving data into the buffer. However
              * set an error to stop accepting writes as long as the error
@@ -680,7 +680,7 @@ int loadAppendOnlyFile(char *filename) {
 
     if (fp == NULL) {
         serverLog(LL_WARNING,"Fatal error: can't open the append log file for reading: %s",strerror(errno));
-        exit(1);
+        exitFromServer(1);
     }
 
     /* Handle a zero-length AOF file as a special case. An empty AOF file
@@ -778,7 +778,7 @@ int loadAppendOnlyFile(char *filename) {
         cmd = lookupCommand(argv[0]->ptr);
         if (!cmd) {
             serverLog(LL_WARNING,"Unknown command '%s' reading the append only file", (char*)argv[0]->ptr);
-            exit(1);
+            exitFromServer(1);
         }
 
         /* Run the command in the context of a fake client */
@@ -816,7 +816,7 @@ readerr: /* Read error. If feof(fp) is true, fall through to unexpected EOF. */
     if (!feof(fp)) {
         if (fakeClient) freeFakeClient(fakeClient); /* avoid valgrind warning */
         serverLog(LL_WARNING,"Unrecoverable error reading the append only file: %s", strerror(errno));
-        exit(1);
+        exitFromServer(1);
     }
 
 uxeof: /* Unexpected AOF end of file. */
@@ -846,12 +846,12 @@ uxeof: /* Unexpected AOF end of file. */
     }
     if (fakeClient) freeFakeClient(fakeClient); /* avoid valgrind warning */
     serverLog(LL_WARNING,"Unexpected end of file reading the append only file. You can: 1) Make a backup of your AOF file, then use ./redis-check-aof --fix <filename>. 2) Alternatively you can set the 'aof-load-truncated' configuration option to yes and restart the server.");
-    exit(1);
+    exitFromServer(1);
 
 fmterr: /* Format error. */
     if (fakeClient) freeFakeClient(fakeClient); /* avoid valgrind warning */
     serverLog(LL_WARNING,"Bad file format reading the append only file: make a backup of your AOF file, then use ./redis-check-aof --fix <filename>");
-    exit(1);
+    exitFromServer(1);
 }
 
 /* ----------------------------------------------------------------------------

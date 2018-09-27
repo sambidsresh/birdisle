@@ -1097,7 +1097,7 @@ void restartAOF() {
     }
     if (!retry) {
         serverLog(LL_WARNING,"FATAL: this slave instance finished the synchronization with its master, but the AOF can't be turned on. Exiting now.");
-        exit(1);
+        exitFromServer(1);
     }
 }
 
