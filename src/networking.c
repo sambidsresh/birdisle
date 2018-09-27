@@ -758,7 +758,7 @@ void readMetaHandler(aeEventLoop *el, int fd, void *privdata, int mask) {
     UNUSED(privdata);
 
     while(max--) {
-        if (read(fd, &cfd, sizeof(cfd)) != sizeof(cfd)) {
+        if (anetRead(fd, (char *) &cfd, sizeof(cfd)) != sizeof(cfd)) {
             if (errno != EWOULDBLOCK)
                 serverLog(LL_WARNING,
                     "Accepting client connection: %s", strerror(errno));
