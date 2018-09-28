@@ -156,7 +156,7 @@ typedef struct raxIterator {
 } raxIterator;
 
 /* A special pointer returned for not found items. */
-extern void *raxNotFound;
+extern void * const raxNotFound;
 
 /* Exported API. */
 rax *raxNew(void);

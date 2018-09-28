@@ -47,7 +47,7 @@ uint64_t dictStringHash(const void *key) {
 
 void dictVanillaFree(void *privdata, void *val);
 
-dictType latencyTimeSeriesDictType = {
+const dictType latencyTimeSeriesDictType = {
     dictStringHash,             /* hash function */
     NULL,                       /* key dup */
     NULL,                       /* val dup */

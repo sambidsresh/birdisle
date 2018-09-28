@@ -819,7 +819,7 @@ typedef struct clientBufferLimitsConfig {
     time_t soft_limit_seconds;
 } clientBufferLimitsConfig;
 
-extern clientBufferLimitsConfig clientBufferLimitsDefaults[CLIENT_TYPE_OBUF_COUNT];
+extern const clientBufferLimitsConfig clientBufferLimitsDefaults[CLIENT_TYPE_OBUF_COUNT];
 
 /* The redisOp structure defines a Redis Operation, that is an instance of
  * a command with an argument vector, database ID, propagation target
@@ -1361,21 +1361,21 @@ typedef struct {
  * Extern declarations
  *----------------------------------------------------------------------------*/
 
-extern struct redisServer server;
-extern struct sharedObjectsStruct shared;
-extern dictType objectKeyPointerValueDictType;
-extern dictType objectKeyHeapPointerValueDictType;
-extern dictType setDictType;
-extern dictType zsetDictType;
-extern dictType clusterNodesDictType;
-extern dictType clusterNodesBlackListDictType;
-extern dictType dbDictType;
-extern dictType shaScriptObjectDictType;
-extern double R_Zero, R_PosInf, R_NegInf, R_Nan;
-extern dictType hashDictType;
-extern dictType replScriptCacheDictType;
-extern dictType keyptrDictType;
-extern dictType modulesDictType;
+extern __thread struct redisServer server;
+extern __thread struct sharedObjectsStruct shared;
+extern const dictType objectKeyPointerValueDictType;
+extern const dictType objectKeyHeapPointerValueDictType;
+extern const dictType setDictType;
+extern const dictType zsetDictType;
+extern const dictType clusterNodesDictType;
+extern const dictType clusterNodesBlackListDictType;
+extern const dictType dbDictType;
+extern const dictType shaScriptObjectDictType;
+extern __thread double R_Zero, R_PosInf, R_NegInf, R_Nan;
+extern const dictType hashDictType;
+extern const dictType replScriptCacheDictType;
+extern const dictType keyptrDictType;
+extern const dictType modulesDictType;
 
 /*-----------------------------------------------------------------------------
  * Functions prototypes

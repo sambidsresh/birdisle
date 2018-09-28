@@ -24,9 +24,9 @@ should also not be used with sentinel or in cluster mode as this is totally
 untested and I have no idea what will happen.
 
 Redis was also never designed to have multiple instances running in the same
-address space (it has a lot of global state). Thus, it is not possible to
-emulate multiple independent servers. The best one can do (for now) is use
-different database numbers.
+address space (it has a lot of global state). It's been made to work by making
+it strictly single-threaded and making all the state thread-local, but modules
+that create background threads should **not** be used.
 
 ## Status
 

@@ -50,7 +50,7 @@ struct RedisModule {
 };
 typedef struct RedisModule RedisModule;
 
-static dict *modules; /* Hash table of modules. SDS -> RedisModule ptr.*/
+static __thread dict *modules; /* Hash table of modules. SDS -> RedisModule ptr.*/
 
 /* Entries in the context->amqueue array, representing objects to free
  * when the callback returns. */
@@ -214,11 +214,11 @@ typedef struct RedisModuleBlockedClient {
 } RedisModuleBlockedClient;
 
 static pthread_mutex_t moduleUnblockedClientsMutex = PTHREAD_MUTEX_INITIALIZER;
-static list *moduleUnblockedClients;
+static __thread list *moduleUnblockedClients;
 
 /* We need a mutex that is unlocked / relocked in beforeSleep() in order to
  * allow thread safe contexts to execute commands at a safe moment. */
-static pthread_mutex_t moduleGIL = PTHREAD_MUTEX_INITIALIZER;
+static __thread pthread_mutex_t moduleGIL = PTHREAD_MUTEX_INITIALIZER;
 
 
 /* Function pointer type for keyspace event notification subscriptions from modules. */
@@ -239,11 +239,11 @@ typedef struct RedisModuleKeyspaceSubscriber {
 } RedisModuleKeyspaceSubscriber;
 
 /* The module keyspace notification subscribers list */
-static list *moduleKeyspaceSubscribers;
+static __thread list *moduleKeyspaceSubscribers;
 
 /* Static client recycled for all notification clients, to avoid allocating
  * per round. */
-static client *moduleKeyspaceSubscribersClient;
+static __thread client *moduleKeyspaceSubscribersClient;
 
 /* --------------------------------------------------------------------------
  * Prototypes
@@ -3927,7 +3927,7 @@ typedef struct moduleClusterNodeInfo {
 
 /* We have an array of message types: each bucket is a linked list of
  * configured receivers. */
-static moduleClusterReceiver *clusterReceivers[UINT8_MAX];
+static __thread moduleClusterReceiver *clusterReceivers[UINT8_MAX];
 
 /* Dispatch the message to the right module receiver. */
 void moduleCallClusterReceivers(const char *sender_id, uint64_t module_id, uint8_t type, const unsigned char *payload, uint32_t len) {
@@ -4145,8 +4145,8 @@ int RM_GetClusterNodeInfo(RedisModuleCtx *ctx, const char *id, char *ip, char *m
  * not used.
  * -------------------------------------------------------------------------- */
 
-static rax *Timers;     /* The radix tree of all the timers sorted by expire. */
-long long aeTimer = -1; /* Main event loop (ae.c) timer identifier. */
+static __thread rax *Timers;     /* The radix tree of all the timers sorted by expire. */
+__thread long long aeTimer = -1; /* Main event loop (ae.c) timer identifier. */
 
 typedef void (*RedisModuleTimerProc)(RedisModuleCtx *ctx, void *data);
 
@@ -4310,7 +4310,7 @@ int dictCStringKeyCompare(void *privdata, const void *key1, const void *key2) {
     return strcmp(key1,key2) == 0;
 }
 
-dictType moduleAPIDictType = {
+const dictType moduleAPIDictType = {
     dictCStringKeyHash,        /* hash function */
     NULL,                      /* key dup */
     NULL,                      /* val dup */

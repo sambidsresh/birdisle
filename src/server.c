@@ -59,19 +59,19 @@
 
 /* Our shared "common" objects */
 
-struct sharedObjectsStruct shared;
+__thread struct sharedObjectsStruct shared;
 
 /* Global vars that are actually used as constants. The following double
  * values are used for double on-disk serialization, and are initialized
  * at runtime to avoid strange compiler optimizations. */
 
-double R_Zero, R_PosInf, R_NegInf, R_Nan;
+__thread double R_Zero, R_PosInf, R_NegInf, R_Nan;
 
 /*================================= Globals ================================= */
 
 /* Global vars */
-struct redisServer server; /* Server global state */
-volatile unsigned long lru_clock; /* Server global current LRU time. */
+__thread struct redisServer server; /* Server global state */
+__thread volatile unsigned long lru_clock; /* Server global current LRU time. */
 
 /* Our command table.
  *
@@ -125,7 +125,7 @@ volatile unsigned long lru_clock; /* Server global current LRU time. */
  *    Note that commands that may trigger a DEL as a side effect (like SET)
  *    are not fast commands.
  */
-struct redisCommand redisCommandTable[] = {
+__thread struct redisCommand redisCommandTable[] = {
     {"module",moduleCommand,-2,"as",0,NULL,0,0,0,0,0},
     {"get",getCommand,2,"rF",0,NULL,1,1,1,0,0},
     {"set",setCommand,-3,"wm",0,NULL,1,1,1,0,0},
@@ -570,7 +570,7 @@ uint64_t dictEncObjHash(const void *key) {
 
 /* Generic hash table type where keys are Redis Objects, Values
  * dummy pointers. */
-dictType objectKeyPointerValueDictType = {
+const dictType objectKeyPointerValueDictType = {
     dictEncObjHash,            /* hash function */
     NULL,                      /* key dup */
     NULL,                      /* val dup */
@@ -581,7 +581,7 @@ dictType objectKeyPointerValueDictType = {
 
 /* Like objectKeyPointerValueDictType(), but values can be destroyed, if
  * not NULL, calling zfree(). */
-dictType objectKeyHeapPointerValueDictType = {
+const dictType objectKeyHeapPointerValueDictType = {
     dictEncObjHash,            /* hash function */
     NULL,                      /* key dup */
     NULL,                      /* val dup */
@@ -591,7 +591,7 @@ dictType objectKeyHeapPointerValueDictType = {
 };
 
 /* Set dictionary type. Keys are SDS strings, values are ot used. */
-dictType setDictType = {
+const dictType setDictType = {
     dictSdsHash,               /* hash function */
     NULL,                      /* key dup */
     NULL,                      /* val dup */
@@ -601,7 +601,7 @@ dictType setDictType = {
 };
 
 /* Sorted sets hash (note: a skiplist is used in addition to the hash table) */
-dictType zsetDictType = {
+const dictType zsetDictType = {
     dictSdsHash,               /* hash function */
     NULL,                      /* key dup */
     NULL,                      /* val dup */
@@ -611,7 +611,7 @@ dictType zsetDictType = {
 };
 
 /* Db->dict, keys are sds strings, vals are Redis objects. */
-dictType dbDictType = {
+const dictType dbDictType = {
     dictSdsHash,                /* hash function */
     NULL,                       /* key dup */
     NULL,                       /* val dup */
@@ -621,7 +621,7 @@ dictType dbDictType = {
 };
 
 /* server.lua_scripts sha (as sds string) -> scripts (as robj) cache. */
-dictType shaScriptObjectDictType = {
+const dictType shaScriptObjectDictType = {
     dictSdsCaseHash,            /* hash function */
     NULL,                       /* key dup */
     NULL,                       /* val dup */
@@ -631,7 +631,7 @@ dictType shaScriptObjectDictType = {
 };
 
 /* Db->expires */
-dictType keyptrDictType = {
+const dictType keyptrDictType = {
     dictSdsHash,                /* hash function */
     NULL,                       /* key dup */
     NULL,                       /* val dup */
@@ -641,7 +641,7 @@ dictType keyptrDictType = {
 };
 
 /* Command table. sds string -> command struct pointer. */
-dictType commandTableDictType = {
+const dictType commandTableDictType = {
     dictSdsCaseHash,            /* hash function */
     NULL,                       /* key dup */
     NULL,                       /* val dup */
@@ -651,7 +651,7 @@ dictType commandTableDictType = {
 };
 
 /* Hash type hash table (note that small hashes are represented with ziplists) */
-dictType hashDictType = {
+const dictType hashDictType = {
     dictSdsHash,                /* hash function */
     NULL,                       /* key dup */
     NULL,                       /* val dup */
@@ -663,7 +663,7 @@ dictType hashDictType = {
 /* Keylist hash table type has unencoded redis objects as keys and
  * lists as values. It's used for blocking operations (BLPOP) and to
  * map swapped keys to a list of clients waiting for this keys to be loaded. */
-dictType keylistDictType = {
+const dictType keylistDictType = {
     dictObjHash,                /* hash function */
     NULL,                       /* key dup */
     NULL,                       /* val dup */
@@ -674,7 +674,7 @@ dictType keylistDictType = {
 
 /* Cluster nodes hash table, mapping nodes addresses 1.2.3.4:6379 to
  * clusterNode structures. */
-dictType clusterNodesDictType = {
+const dictType clusterNodesDictType = {
     dictSdsHash,                /* hash function */
     NULL,                       /* key dup */
     NULL,                       /* val dup */
@@ -686,7 +686,7 @@ dictType clusterNodesDictType = {
 /* Cluster re-addition blacklist. This maps node IDs to the time
  * we can re-add this node. The goal is to avoid readding a removed
  * node for some time. */
-dictType clusterNodesBlackListDictType = {
+const dictType clusterNodesBlackListDictType = {
     dictSdsCaseHash,            /* hash function */
     NULL,                       /* key dup */
     NULL,                       /* val dup */
@@ -698,7 +698,7 @@ dictType clusterNodesBlackListDictType = {
 /* Cluster re-addition blacklist. This maps node IDs to the time
  * we can re-add this node. The goal is to avoid readding a removed
  * node for some time. */
-dictType modulesDictType = {
+const dictType modulesDictType = {
     dictSdsCaseHash,            /* hash function */
     NULL,                       /* key dup */
     NULL,                       /* val dup */
@@ -708,7 +708,7 @@ dictType modulesDictType = {
 };
 
 /* Migrate cache dict type. */
-dictType migrateCacheDictType = {
+const dictType migrateCacheDictType = {
     dictSdsHash,                /* hash function */
     NULL,                       /* key dup */
     NULL,                       /* val dup */
@@ -720,7 +720,7 @@ dictType migrateCacheDictType = {
 /* Replication cached script dict (server.repl_scriptcache_dict).
  * Keys are sds SHA1 strings, while values are not used at all in the current
  * implementation. */
-dictType replScriptCacheDictType = {
+const dictType replScriptCacheDictType = {
     dictSdsCaseHash,            /* hash function */
     NULL,                       /* key dup */
     NULL,                       /* val dup */
@@ -903,8 +903,8 @@ int clientsCronResizeQueryBuffer(client *c) {
  * When we want to know what was recently the peak memory usage, we just scan
  * such few slots searching for the maximum value. */
 #define CLIENTS_PEAK_MEM_USAGE_SLOTS 8
-size_t ClientsPeakMemInput[CLIENTS_PEAK_MEM_USAGE_SLOTS];
-size_t ClientsPeakMemOutput[CLIENTS_PEAK_MEM_USAGE_SLOTS];
+__thread size_t ClientsPeakMemInput[CLIENTS_PEAK_MEM_USAGE_SLOTS];
+__thread size_t ClientsPeakMemOutput[CLIENTS_PEAK_MEM_USAGE_SLOTS];
 
 int clientsCronTrackExpansiveClients(client *c) {
     size_t in_usage = sdsAllocSize(c->querybuf);
@@ -2756,7 +2756,7 @@ void closeListeningSockets(int unlink_unix_socket) {
         serverLog(LL_NOTICE,"Removing the unix socket file.");
         unlink(server.unixsocket); /* don't care if this fails */
     }
-    if (server.metafd != -1) close(server.metafd);
+    /* The metasocket is closed by birdisleStopServer */
 }
 
 int prepareForShutdown(int flags) {
@@ -2828,6 +2828,7 @@ int prepareForShutdown(int flags) {
     closeListeningSockets(1);
     serverLog(LL_WARNING,"%s is now ready to exit, bye bye...",
         server.sentinel_mode ? "Sentinel" : "Redis");
+
     return C_OK;
 }
 

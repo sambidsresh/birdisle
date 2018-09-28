@@ -44,7 +44,7 @@
 /* A global reference to myself is handy to make code more clear.
  * Myself always points to server.cluster->myself, that is, the clusterNode
  * that represents this node. */
-clusterNode *myself = NULL;
+__thread clusterNode *myself = NULL;
 
 clusterNode *createClusterNode(char *nodename, int flags);
 int clusterAddNode(clusterNode *node);
@@ -3942,7 +3942,7 @@ struct redisNodeFlags {
     char *name;
 };
 
-static struct redisNodeFlags redisNodeFlagsTable[] = {
+static const struct redisNodeFlags redisNodeFlagsTable[] = {
     {CLUSTER_NODE_MYSELF,       "myself,"},
     {CLUSTER_NODE_MASTER,       "master,"},
     {CLUSTER_NODE_SLAVE,        "slave,"},
@@ -3959,7 +3959,7 @@ sds representClusterNodeFlags(sds ci, uint16_t flags) {
     size_t orig_len = sdslen(ci);
     int i, size = sizeof(redisNodeFlagsTable)/sizeof(struct redisNodeFlags);
     for (i = 0; i < size; i++) {
-        struct redisNodeFlags *nodeflag = redisNodeFlagsTable + i;
+        const struct redisNodeFlags *nodeflag = redisNodeFlagsTable + i;
         if (flags & nodeflag->flag) ci = sdscat(ci, nodeflag->name);
     }
     /* If no flag was added, add the "noflags" special flag. */

@@ -58,7 +58,7 @@ struct evictionPoolEntry {
     int dbid;                   /* Key DB number. */
 };
 
-static struct evictionPoolEntry *EvictionPoolLRU;
+static __thread struct evictionPoolEntry *EvictionPoolLRU;
 
 /* ----------------------------------------------------------------------------
  * Implementation of eviction, aging and LRU

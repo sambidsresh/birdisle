@@ -38,7 +38,7 @@
 
 #include <stdio.h>
 
-static int evport_debug = 0;
+static __thread int evport_debug = 0;
 
 /*
  * This file implements the ae API using event ports, present on Solaris-based

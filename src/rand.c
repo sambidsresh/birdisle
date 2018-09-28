@@ -65,7 +65,7 @@
 		return (v);
 #define HI_BIT	(1L << (2 * N - 1))
 
-static uint32_t x[3] = { X0, X1, X2 }, a[3] = { A0, A1, A2 }, c = C;
+static __thread uint32_t x[3] = { X0, X1, X2 }, a[3] = { A0, A1, A2 }, c = C;
 static void next(void);
 
 int32_t redisLrand48() {

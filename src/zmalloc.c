@@ -83,7 +83,7 @@ void zlibc_free(void *ptr) {
     atomicDecr(used_memory,__n); \
 } while(0)
 
-static size_t used_memory = 0;
+static __thread size_t used_memory = 0;
 pthread_mutex_t used_memory_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static void zmalloc_default_oom(size_t size) {
@@ -93,7 +93,7 @@ static void zmalloc_default_oom(size_t size) {
     abort();
 }
 
-static void (*zmalloc_oom_handler)(size_t) = zmalloc_default_oom;
+static __thread void (*zmalloc_oom_handler)(size_t) = zmalloc_default_oom;
 
 void *zmalloc(size_t size) {
     void *ptr = malloc(size+PREFIX_SIZE);

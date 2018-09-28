@@ -230,7 +230,7 @@ typedef struct sentinelRedisInstance {
 } sentinelRedisInstance;
 
 /* Main state. */
-struct sentinelState {
+__thread struct sentinelState {
     char myid[CONFIG_RUN_ID_SIZE+1]; /* This sentinel ID. */
     uint64_t current_epoch;         /* Current epoch. */
     dict *masters;      /* Dictionary of master sentinelRedisInstances.
@@ -401,7 +401,7 @@ void dictInstancesValDestructor (void *privdata, void *obj) {
  *
  * also used for: sentinelRedisInstance->sentinels dictionary that maps
  * sentinels ip:port to last seen time in Pub/Sub hello message. */
-dictType instancesDictType = {
+const dictType instancesDictType = {
     dictSdsHash,               /* hash function */
     NULL,                      /* key dup */
     NULL,                      /* val dup */
@@ -414,7 +414,7 @@ dictType instancesDictType = {
  *
  * This is useful into sentinelGetObjectiveLeader() function in order to
  * count the votes and understand who is the leader. */
-dictType leaderVotesDictType = {
+const dictType leaderVotesDictType = {
     dictSdsHash,               /* hash function */
     NULL,                      /* key dup */
     NULL,                      /* val dup */
@@ -424,7 +424,7 @@ dictType leaderVotesDictType = {
 };
 
 /* Instance renamed commands table. */
-dictType renamedCommandsDictType = {
+const dictType renamedCommandsDictType = {
     dictSdsCaseHash,           /* hash function */
     NULL,                      /* key dup */
     NULL,                      /* val dup */
@@ -441,7 +441,7 @@ void sentinelSetCommand(client *c);
 void sentinelPublishCommand(client *c);
 void sentinelRoleCommand(client *c);
 
-struct redisCommand sentinelcmds[] = {
+__thread struct redisCommand sentinelcmds[] = {
     {"ping",pingCommand,1,"",0,NULL,0,0,0,0,0},
     {"sentinel",sentinelCommand,-2,"",0,NULL,0,0,0,0,0},
     {"subscribe",subscribeCommand,-2,"",0,NULL,0,0,0,0,0},

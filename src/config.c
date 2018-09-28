@@ -43,7 +43,7 @@ typedef struct configEnum {
     const int val;
 } configEnum;
 
-configEnum maxmemory_policy_enum[] = {
+const configEnum maxmemory_policy_enum[] = {
     {"volatile-lru", MAXMEMORY_VOLATILE_LRU},
     {"volatile-lfu", MAXMEMORY_VOLATILE_LFU},
     {"volatile-random",MAXMEMORY_VOLATILE_RANDOM},
@@ -55,7 +55,7 @@ configEnum maxmemory_policy_enum[] = {
     {NULL, 0}
 };
 
-configEnum syslog_facility_enum[] = {
+const configEnum syslog_facility_enum[] = {
     {"user",    LOG_USER},
     {"local0",  LOG_LOCAL0},
     {"local1",  LOG_LOCAL1},
@@ -68,7 +68,7 @@ configEnum syslog_facility_enum[] = {
     {NULL, 0}
 };
 
-configEnum loglevel_enum[] = {
+const configEnum loglevel_enum[] = {
     {"debug", LL_DEBUG},
     {"verbose", LL_VERBOSE},
     {"notice", LL_NOTICE},
@@ -76,7 +76,7 @@ configEnum loglevel_enum[] = {
     {NULL,0}
 };
 
-configEnum supervised_mode_enum[] = {
+const configEnum supervised_mode_enum[] = {
     {"upstart", SUPERVISED_UPSTART},
     {"systemd", SUPERVISED_SYSTEMD},
     {"auto", SUPERVISED_AUTODETECT},
@@ -84,7 +84,7 @@ configEnum supervised_mode_enum[] = {
     {NULL, 0}
 };
 
-configEnum aof_fsync_enum[] = {
+const configEnum aof_fsync_enum[] = {
     {"everysec", AOF_FSYNC_EVERYSEC},
     {"always", AOF_FSYNC_ALWAYS},
     {"no", AOF_FSYNC_NO},
@@ -92,7 +92,7 @@ configEnum aof_fsync_enum[] = {
 };
 
 /* Output buffer limits presets. */
-clientBufferLimitsConfig clientBufferLimitsDefaults[CLIENT_TYPE_OBUF_COUNT] = {
+const clientBufferLimitsConfig clientBufferLimitsDefaults[CLIENT_TYPE_OBUF_COUNT] = {
     {0, 0, 0}, /* normal */
     {1024*1024*256, 1024*1024*64, 60}, /* slave */
     {1024*1024*32, 1024*1024*8, 60}  /* pubsub */
@@ -103,7 +103,7 @@ clientBufferLimitsConfig clientBufferLimitsDefaults[CLIENT_TYPE_OBUF_COUNT] = {
  *----------------------------------------------------------------------------*/
 
 /* Get enum value from name. If there is no match INT_MIN is returned. */
-int configEnumGetValue(configEnum *ce, char *name) {
+int configEnumGetValue(const configEnum *ce, char *name) {
     while(ce->name != NULL) {
         if (!strcasecmp(ce->name,name)) return ce->val;
         ce++;
@@ -112,7 +112,7 @@ int configEnumGetValue(configEnum *ce, char *name) {
 }
 
 /* Get enum name from value. If no match is found NULL is returned. */
-const char *configEnumGetName(configEnum *ce, int val) {
+const char *configEnumGetName(const configEnum *ce, int val) {
     while(ce->name != NULL) {
         if (ce->val == val) return ce->name;
         ce++;
@@ -122,7 +122,7 @@ const char *configEnumGetName(configEnum *ce, int val) {
 
 /* Wrapper for configEnumGetName() returning "unknown" insetad of NULL if
  * there is no match. */
-const char *configEnumGetNameOrUnknown(configEnum *ce, int val) {
+const char *configEnumGetNameOrUnknown(const configEnum *ce, int val) {
     const char *name = configEnumGetName(ce,val);
     return name ? name : "unknown";
 }
@@ -1514,7 +1514,7 @@ void dictListDestructor(void *privdata, void *val);
  * rewriteConfigSentinelOption(). */
 void rewriteConfigSentinelOption(struct rewriteConfigState *state);
 
-dictType optionToLineDictType = {
+const dictType optionToLineDictType = {
     dictSdsCaseHash,            /* hash function */
     NULL,                       /* key dup */
     NULL,                       /* val dup */
@@ -1523,7 +1523,7 @@ dictType optionToLineDictType = {
     dictListDestructor          /* val destructor */
 };
 
-dictType optionSetDictType = {
+const dictType optionSetDictType = {
     dictSdsCaseHash,            /* hash function */
     NULL,                       /* key dup */
     NULL,                       /* val dup */
@@ -1761,7 +1761,7 @@ void rewriteConfigOctalOption(struct rewriteConfigState *state, char *option, in
 /* Rewrite an enumeration option. It takes as usually state and option name,
  * and in addition the enumeration array and the default value for the
  * option. */
-void rewriteConfigEnumOption(struct rewriteConfigState *state, char *option, int value, configEnum *ce, int defval) {
+void rewriteConfigEnumOption(struct rewriteConfigState *state, char *option, int value, const configEnum *ce, int defval) {
     sds line;
     const char *name = configEnumGetNameOrUnknown(ce,value);
     int force = value != defval;

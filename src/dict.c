@@ -59,19 +59,19 @@
  * Note that even when dict_can_resize is set to 0, not all resizes are
  * prevented: a hash table is still allowed to grow if the ratio between
  * the number of elements and the buckets > dict_force_resize_ratio. */
-static int dict_can_resize = 1;
-static unsigned int dict_force_resize_ratio = 5;
+static __thread int dict_can_resize = 1;
+static const unsigned int dict_force_resize_ratio = 5;
 
 /* -------------------------- private prototypes ---------------------------- */
 
 static int _dictExpandIfNeeded(dict *ht);
 static unsigned long _dictNextPower(unsigned long size);
 static long _dictKeyIndex(dict *ht, const void *key, uint64_t hash, dictEntry **existing);
-static int _dictInit(dict *ht, dictType *type, void *privDataPtr);
+static int _dictInit(dict *ht, const dictType *type, void *privDataPtr);
 
 /* -------------------------- hash functions -------------------------------- */
 
-static uint8_t dict_hash_function_seed[16];
+static __thread uint8_t dict_hash_function_seed[16];
 
 void dictSetHashFunctionSeed(uint8_t *seed) {
     memcpy(dict_hash_function_seed,seed,sizeof(dict_hash_function_seed));
@@ -108,7 +108,7 @@ static void _dictReset(dictht *ht)
 }
 
 /* Create a new hash table */
-dict *dictCreate(dictType *type,
+dict *dictCreate(const dictType *type,
         void *privDataPtr)
 {
     dict *d = zmalloc(sizeof(*d));
@@ -118,7 +118,7 @@ dict *dictCreate(dictType *type,
 }
 
 /* Initialize the hash table */
-int _dictInit(dict *d, dictType *type,
+int _dictInit(dict *d, const dictType *type,
         void *privDataPtr)
 {
     _dictReset(&d->ht[0]);
@@ -1134,7 +1134,7 @@ void freeCallback(void *privdata, void *val) {
     sdsfree(val);
 }
 
-dictType BenchmarkDictType = {
+const dictType BenchmarkDictType = {
     hashCallback,
     NULL,
     NULL,

@@ -36,10 +36,10 @@
 
 /* This is the charset used to display the graphs, but multiple rows are used
  * to increase the resolution. */
-static char charset[] = "_-`";
-static char charset_fill[] = "_o#";
-static int charset_len = sizeof(charset)-1;
-static int label_margin_top = 1;
+static const char charset[] = "_-`";
+static const char charset_fill[] = "_o#";
+static const int charset_len = sizeof(charset)-1;
+static const int label_margin_top = 1;
 
 /* ----------------------------------------------------------------------------
  * Sequences are arrays of samples we use to represent data to turn
