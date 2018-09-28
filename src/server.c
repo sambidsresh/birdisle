@@ -4043,7 +4043,9 @@ int redisMain(int metafd, int argc, char **argv) {
 
     /* We need to initialize our libraries, and the server configuration. */
 #ifdef INIT_SETPROCTITLE_REPLACEMENT
+#if 0  /* disabled for birdisle */
     spt_init(argc, argv);
+#endif
 #endif
     setlocale(LC_COLLATE,"");
     tzset(); /* Populates 'timezone' global. */
