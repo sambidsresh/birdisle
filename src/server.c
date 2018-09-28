@@ -2763,7 +2763,7 @@ int prepareForShutdown(int flags) {
     int save = flags & SHUTDOWN_SAVE;
     int nosave = flags & SHUTDOWN_NOSAVE;
 
-    serverLog(LL_WARNING,"User requested shutdown...");
+    serverLog(LL_VERBOSE,"User requested shutdown...");
 
     /* Kill all the Lua debugger forked sessions. */
     ldbKillForkedSessions();
@@ -2826,7 +2826,7 @@ int prepareForShutdown(int flags) {
 
     /* Close the listening sockets. Apparently this allows faster restarts. */
     closeListeningSockets(1);
-    serverLog(LL_WARNING,"%s is now ready to exit, bye bye...",
+    serverLog(LL_VERBOSE,"%s is now ready to exit, bye bye...",
         server.sentinel_mode ? "Sentinel" : "Redis");
 
     return C_OK;
