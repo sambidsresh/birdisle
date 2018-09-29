@@ -2763,7 +2763,7 @@ int prepareForShutdown(int flags) {
     int save = flags & SHUTDOWN_SAVE;
     int nosave = flags & SHUTDOWN_NOSAVE;
 
-    serverLog(LL_VERBOSE,"User requested shutdown...");
+    serverLog(LL_WARNING,"User requested shutdown...");
 
     /* Kill all the Lua debugger forked sessions. */
     ldbKillForkedSessions();
@@ -2826,9 +2826,8 @@ int prepareForShutdown(int flags) {
 
     /* Close the listening sockets. Apparently this allows faster restarts. */
     closeListeningSockets(1);
-    serverLog(LL_VERBOSE,"%s is now ready to exit, bye bye...",
+    serverLog(LL_WARNING,"%s is now ready to exit, bye bye...",
         server.sentinel_mode ? "Sentinel" : "Redis");
-
     return C_OK;
 }
 
@@ -4149,7 +4148,6 @@ int redisMain(int metafd, int argc, char **argv) {
         sdsfree(options);
     }
 
-#if 0  /* Disabled for birdisle */
     serverLog(LL_WARNING, "oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo");
     serverLog(LL_WARNING,
         "Redis version=%s, bits=%d, commit=%s, modified=%d, pid=%d, just started",
@@ -4165,6 +4163,7 @@ int redisMain(int metafd, int argc, char **argv) {
         serverLog(LL_WARNING, "Configuration loaded");
     }
 
+#if 0  /* Disabled for birdisle */
     server.supervised = redisIsSupervised(server.supervised_mode);
 #endif
     int background = server.daemonize && !server.supervised;
@@ -4175,17 +4174,15 @@ int redisMain(int metafd, int argc, char **argv) {
     if (background || server.pidfile) createPidFile();
 #if 0  /* Disabled for birdisle */
     redisSetProcTitle(argv[0]);
+#endif
     redisAsciiArt();
     checkTcpBacklogSettings();
-#endif
 
     if (!server.sentinel_mode) {
-    #if 0   /* Disabled for birdisle */
         /* Things not needed when running in Sentinel mode. */
         serverLog(LL_WARNING,"Server initialized");
     #ifdef __linux__
         linuxMemoryWarnings();
-    #endif
     #endif
         moduleLoadFromQueue();
         loadDataFromDisk();

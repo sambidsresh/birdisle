@@ -14,9 +14,9 @@ struct birdisleServer {
 void *serverThread(void *arg) {
     int exit_code;
     birdisleServer *handle = (birdisleServer *) arg;
-    char *argv[4] = {"redis", "--port", "0", NULL};
+    char *argv[] = {"redis", "--port", "0", "--logfile", "/dev/null", NULL};
 
-    exit_code = redisMain(handle->metafd[0], 3, argv);
+    exit_code = redisMain(handle->metafd[0], sizeof(argv) / sizeof(argv[0]) - 1, argv);
     return (void *) (intptr_t) exit_code;
 }
 
