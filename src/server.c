@@ -4024,6 +4024,9 @@ static void setupLocale(void)
         loc = posix;
     }
     uselocale(loc);
+    /* TODO: the locale leaks. We need to save it and free it during shutdown,
+     * or make it global and initialise it with pthread_once.
+     */
 }
 
 int redisMain(int metafd, int argc, char **argv) {
