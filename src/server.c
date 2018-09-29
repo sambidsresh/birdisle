@@ -4009,6 +4009,22 @@ int redisIsSupervised(int mode) {
     return 0;
 }
 
+static void setupLocale(void)
+{
+    locale_t posix, loc;
+
+    posix = newlocale(LC_ALL_MASK, "POSIX", (locale_t) 0);
+    if (posix == (locale_t) 0) {
+        serverLog(LL_WARNING,"Failed to create POSIX locale");
+        return;
+    }
+    loc = newlocale(LC_COLLATE_MASK, "", posix);
+    if (loc == (locale_t) 0) {
+        serverLog(LL_WARNING,"Failed to set LC_COLLATE");
+        loc = posix;
+    }
+    uselocale(loc);
+}
 
 int redisMain(int metafd, int argc, char **argv) {
     struct timeval tv;
@@ -4046,7 +4062,7 @@ int redisMain(int metafd, int argc, char **argv) {
     spt_init(argc, argv);
 #endif
 #endif
-    setlocale(LC_COLLATE,"");
+    setupLocale();
     tzset(); /* Populates 'timezone' global. */
     zmalloc_set_oom_handler(redisOutOfMemoryHandler);
     srand(time(NULL)^getpid());
