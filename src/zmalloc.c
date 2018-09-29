@@ -46,15 +46,19 @@ void zlibc_free(void *ptr) {
 #include "zmalloc.h"
 #include "atomicvar.h"
 
-#ifdef HAVE_MALLOC_SIZE
-#define PREFIX_SIZE (0)
-#else
+typedef struct zmalloc_header {
+#ifndef HAVE_MALLOC_SIZE
 #if defined(__sun) || defined(__sparc) || defined(__sparc__)
-#define PREFIX_SIZE (sizeof(long long))
+    long long size;
 #else
-#define PREFIX_SIZE (sizeof(size_t))
+    size_t size;
 #endif
 #endif
+    /* Links in a doubly-linked ring of allocations */
+    struct zmalloc_header *prev, *next;
+} zmalloc_header;
+
+#define PREFIX_SIZE (sizeof(zmalloc_header))
 
 /* Explicitly override malloc/free etc when using tcmalloc. */
 #if defined(USE_TCMALLOC)
@@ -93,20 +97,55 @@ static void zmalloc_default_oom(size_t size) {
     abort();
 }
 
+/* Pointer to an arbitrary element of a doubly-linked ring of all headers. */
+static __thread zmalloc_header *zmalloc_first = NULL;
 static __thread void (*zmalloc_oom_handler)(size_t) = zmalloc_default_oom;
+
+static void zmalloc_link(void *ptr, size_t size) {
+    zmalloc_header *header = (zmalloc_header*)ptr;
+
+    if (zmalloc_first) {
+        header->next = zmalloc_first->next;
+        header->prev = zmalloc_first;
+        header->next->prev = header;
+        header->prev->next = header;
+    }
+    else {
+        zmalloc_first = header->next = header->prev = header;
+    }
+#ifdef HAVE_MALLOC_SIZE
+    update_zmalloc_stat_alloc(zmalloc_size_impl(ptr));
+    ((void) size);
+#else
+    header->size = size;
+    update_zmalloc_stat_alloc(size+PREFIX_SIZE);
+#endif
+}
+
+static void zmalloc_unlink(void *ptr) {
+    zmalloc_header *header = (zmalloc_header*)ptr;
+
+    if (header->next == header) {
+        zmalloc_first = NULL;
+    } else {
+        if (zmalloc_first == header)
+            zmalloc_first = header->next;
+        header->next->prev = header->prev;
+        header->prev->next = header->next;
+    }
+#ifdef HAVE_MALLOC_SIZE
+    update_zmalloc_stat_free(zmalloc_size_impl(ptr));
+#else
+    update_zmalloc_stat_free(header->size+PREFIX_SIZE);
+#endif
+}
 
 void *zmalloc(size_t size) {
     void *ptr = malloc(size+PREFIX_SIZE);
 
     if (!ptr) zmalloc_oom_handler(size);
-#ifdef HAVE_MALLOC_SIZE
-    update_zmalloc_stat_alloc(zmalloc_size(ptr));
-    return ptr;
-#else
-    *((size_t*)ptr) = size;
-    update_zmalloc_stat_alloc(size+PREFIX_SIZE);
+    zmalloc_link(ptr,size);
     return (char*)ptr+PREFIX_SIZE;
-#endif
 }
 
 /* Allocation and free functions that bypass the thread cache
@@ -116,13 +155,13 @@ void *zmalloc(size_t size) {
 void *zmalloc_no_tcache(size_t size) {
     void *ptr = mallocx(size+PREFIX_SIZE, MALLOCX_TCACHE_NONE);
     if (!ptr) zmalloc_oom_handler(size);
-    update_zmalloc_stat_alloc(zmalloc_size(ptr));
+    update_zmalloc_stat_alloc(zmalloc_size_impl(ptr));
     return ptr;
 }
 
 void zfree_no_tcache(void *ptr) {
     if (ptr == NULL) return;
-    update_zmalloc_stat_free(zmalloc_size(ptr));
+    update_zmalloc_stat_free(zmalloc_size_impl(ptr));
     dallocx(ptr, MALLOCX_TCACHE_NONE);
 }
 #endif
@@ -131,78 +170,52 @@ void *zcalloc(size_t size) {
     void *ptr = calloc(1, size+PREFIX_SIZE);
 
     if (!ptr) zmalloc_oom_handler(size);
-#ifdef HAVE_MALLOC_SIZE
-    update_zmalloc_stat_alloc(zmalloc_size(ptr));
-    return ptr;
-#else
-    *((size_t*)ptr) = size;
-    update_zmalloc_stat_alloc(size+PREFIX_SIZE);
+    zmalloc_link(ptr,size);
     return (char*)ptr+PREFIX_SIZE;
-#endif
 }
 
 void *zrealloc(void *ptr, size_t size) {
-#ifndef HAVE_MALLOC_SIZE
     void *realptr;
-#endif
-    size_t oldsize;
     void *newptr;
 
     if (ptr == NULL) return zmalloc(size);
-#ifdef HAVE_MALLOC_SIZE
-    oldsize = zmalloc_size(ptr);
-    newptr = realloc(ptr,size);
-    if (!newptr) zmalloc_oom_handler(size);
-
-    update_zmalloc_stat_free(oldsize);
-    update_zmalloc_stat_alloc(zmalloc_size(newptr));
-    return newptr;
-#else
     realptr = (char*)ptr-PREFIX_SIZE;
-    oldsize = *((size_t*)realptr);
+    zmalloc_unlink(realptr);
     newptr = realloc(realptr,size+PREFIX_SIZE);
     if (!newptr) zmalloc_oom_handler(size);
-
-    *((size_t*)newptr) = size;
-    update_zmalloc_stat_free(oldsize);
-    update_zmalloc_stat_alloc(size+PREFIX_SIZE);
+    zmalloc_link(newptr,size);
     return (char*)newptr+PREFIX_SIZE;
-#endif
 }
 
-/* Provide zmalloc_size() for systems where this function is not provided by
+/* Provide zmalloc_size_impl() for systems where this function is not provided by
  * malloc itself, given that in that case we store a header with this
  * information as the first bytes of every allocation. */
 #ifndef HAVE_MALLOC_SIZE
-size_t zmalloc_size(void *ptr) {
-    void *realptr = (char*)ptr-PREFIX_SIZE;
-    size_t size = *((size_t*)realptr);
+size_t zmalloc_size_impl(void *ptr) {
+    zmalloc_header *header = (zmalloc_header*)ptr;
+    size_t size = header->size;
     /* Assume at least that all the allocations are padded at sizeof(long) by
      * the underlying allocator. */
     if (size&(sizeof(long)-1)) size += sizeof(long)-(size&(sizeof(long)-1));
     return size+PREFIX_SIZE;
 }
+#endif
+
+size_t zmalloc_size(void *ptr) {
+    return zmalloc_size_impl((char*)ptr-PREFIX_SIZE);
+}
+
 size_t zmalloc_usable(void *ptr) {
     return zmalloc_size(ptr)-PREFIX_SIZE;
 }
-#endif
 
 void zfree(void *ptr) {
-#ifndef HAVE_MALLOC_SIZE
     void *realptr;
-    size_t oldsize;
-#endif
 
     if (ptr == NULL) return;
-#ifdef HAVE_MALLOC_SIZE
-    update_zmalloc_stat_free(zmalloc_size(ptr));
-    free(ptr);
-#else
     realptr = (char*)ptr-PREFIX_SIZE;
-    oldsize = *((size_t*)realptr);
-    update_zmalloc_stat_free(oldsize+PREFIX_SIZE);
+    zmalloc_unlink(realptr);
     free(realptr);
-#endif
 }
 
 char *zstrdup(const char *s) {
@@ -221,6 +234,12 @@ size_t zmalloc_used_memory(void) {
 
 void zmalloc_set_oom_handler(void (*oom_handler)(size_t)) {
     zmalloc_oom_handler = oom_handler;
+}
+
+void zmalloc_free_all(void) {
+    while (zmalloc_first) {
+        zfree(zmalloc_first+1);
+    }
 }
 
 /* Get the RSS information in an OS-specific way.

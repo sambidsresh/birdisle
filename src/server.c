@@ -437,6 +437,7 @@ mstime_t mstime(void) {
 }
 
 void exitFromServer(int retcode) {
+    zmalloc_free_all();
     pthread_exit((void *) (intptr_t) retcode);
 }
 
