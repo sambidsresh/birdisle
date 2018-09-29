@@ -57,7 +57,7 @@ sds ldbCatStackValue(sds s, lua_State *lua, int idx);
 /* Debugger shared state is stored inside this global structure. */
 #define LDB_BREAKPOINTS_MAX 64  /* Max number of breakpoints. */
 #define LDB_MAX_LEN_DEFAULT 256 /* Default len limit for replies / var dumps. */
-struct ldbState {
+__thread struct ldbState {
     int fd;     /* Socket of the debugging client. */
     int active; /* Are we debugging EVAL right now? */
     int forked; /* Is this a fork()ed debugging session? */
