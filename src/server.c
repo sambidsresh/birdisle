@@ -2763,6 +2763,8 @@ void closeListeningSockets(int unlink_unix_socket) {
 int prepareForShutdown(int flags) {
     int save = flags & SHUTDOWN_SAVE;
     int nosave = flags & SHUTDOWN_NOSAVE;
+    listIter li;
+    listNode *ln;
 
     serverLog(LL_WARNING,"User requested shutdown...");
 
@@ -2825,11 +2827,20 @@ int prepareForShutdown(int flags) {
      * send them pending writes. */
     flushSlavesOutputBuffers();
 
+    /* Free clients */
+    listRewind(server.clients,&li);
+    while ((ln = listNext(&li)) != NULL) {
+        client *c = listNodeValue(ln);
+        freeClient(c);
+    }
+
     /* Close the listening sockets. Apparently this allows faster restarts. */
     closeListeningSockets(1);
 
-    /* Free memory not allocated via zmalloc*/
+    /* Free other resources not allocated via zmalloc (including file handles) */
+    moduleReleaseModulesSystem();
     scriptingRelease();
+    aeDeleteEventLoop(server.el);
 
     serverLog(LL_WARNING,"%s is now ready to exit, bye bye...",
         server.sentinel_mode ? "Sentinel" : "Redis");

@@ -4359,6 +4359,11 @@ void moduleInitModulesSystem(void) {
     pthread_mutex_lock(&moduleGIL);
 }
 
+void moduleReleaseModulesSystem(void) {
+    close(server.module_blocked_pipe[0]);
+    close(server.module_blocked_pipe[1]);
+}
+
 /* Load all the modules in the server.loadmodule_queue list, which is
  * populated by `loadmodule` directives in the configuration file.
  * We can't load modules directly when processing the configuration file
