@@ -45,6 +45,7 @@
 
 #include "dict.h"
 #include "zmalloc.h"
+#include "rand.h"
 #ifndef DICT_BENCHMARK_MAIN
 #include "redisassert.h"
 #else
@@ -1195,7 +1196,7 @@ int main(int argc, char **argv) {
 
     start_benchmark();
     for (j = 0; j < count; j++) {
-        sds key = sdsfromlonglong(rand() % count);
+        sds key = sdsfromlonglong(redisLrand48() % count);
         dictEntry *de = dictFind(dict,key);
         assert(de != NULL);
         sdsfree(key);
@@ -1204,7 +1205,7 @@ int main(int argc, char **argv) {
 
     start_benchmark();
     for (j = 0; j < count; j++) {
-        sds key = sdsfromlonglong(rand() % count);
+        sds key = sdsfromlonglong(redisLrand48() % count);
         key[0] = 'X';
         dictEntry *de = dictFind(dict,key);
         assert(de == NULL);

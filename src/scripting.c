@@ -721,7 +721,7 @@ int luaRedisReplicateCommandsCommand(lua_State *lua) {
         /* When we switch to single commands replication, we can provide
          * different math.random() sequences at every call, which is what
          * the user normally expects. */
-        redisSrand48(rand());
+        redisSrand48Lua(rand());
         lua_pushboolean(lua,1);
     }
     return 1;
@@ -1113,11 +1113,11 @@ void luaSetGlobalArray(lua_State *lua, char *var, robj **elev, int elec) {
  * (for the same seed) in every arch. */
 
 /* The following implementation is the one shipped with Lua itself but with
- * rand() replaced by redisLrand48(). */
+ * rand() replaced by redisLrand48Lua(). */
 int redis_math_random (lua_State *L) {
   /* the `%' avoids the (rare) case of r==1, and is needed also because on
      some systems (SunOS!) `rand()' may return a value larger than RAND_MAX */
-  lua_Number r = (lua_Number)(redisLrand48()%REDIS_LRAND48_MAX) /
+  lua_Number r = (lua_Number)(redisLrand48Lua()%REDIS_LRAND48_MAX) /
                                 (lua_Number)REDIS_LRAND48_MAX;
   switch (lua_gettop(L)) {  /* check number of arguments */
     case 0: {  /* no arguments */
@@ -1143,7 +1143,7 @@ int redis_math_random (lua_State *L) {
 }
 
 int redis_math_randomseed (lua_State *L) {
-  redisSrand48(luaL_checkint(L, 1));
+  redisSrand48Lua(luaL_checkint(L, 1));
   return 0;
 }
 
@@ -1257,7 +1257,7 @@ void evalGenericCommand(client *c, int evalsha) {
 
     /* When we replicate whole scripts, we want the same PRNG sequence at
      * every call so that our PRNG is not affected by external state. */
-    redisSrand48(0);
+    redisSrand48Lua(0);
 
     /* We set this flag to zero to remember that so far no random command
      * was called. This way we can allow the user to call commands like

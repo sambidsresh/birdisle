@@ -34,6 +34,7 @@
 #include "intset.h"
 #include "zmalloc.h"
 #include "endianconv.h"
+#include "rand.h"
 
 /* Note that these encodings are ordered, so:
  * INTSET_ENC_INT16 < INTSET_ENC_INT32 < INTSET_ENC_INT64. */
@@ -258,7 +259,7 @@ uint8_t intsetFind(intset *is, int64_t value) {
 
 /* Return random member */
 int64_t intsetRandom(intset *is) {
-    return _intsetGet(is,rand()%intrev32ifbe(is->length));
+    return _intsetGet(is,redisLrand48()%intrev32ifbe(is->length));
 }
 
 /* Get the value at the given position. When this position is
@@ -322,9 +323,9 @@ static intset *createSet(int bits, int size) {
 
     for (int i = 0; i < size; i++) {
         if (bits > 32) {
-            value = (rand()*rand()) & mask;
+            value = (redisLrand48()*redisLrand48()) & mask;
         } else {
-            value = rand() & mask;
+            value = redisLrand48() & mask;
         }
         is = intsetAdd(is,value,NULL);
     }
@@ -353,7 +354,7 @@ int intsetTest(int argc, char **argv) {
     uint8_t success;
     int i;
     intset *is;
-    srand(time(NULL));
+    redisSrand48(time(NULL));
 
     UNUSED(argc);
     UNUSED(argv);
@@ -387,7 +388,7 @@ int intsetTest(int argc, char **argv) {
         uint32_t inserts = 0;
         is = intsetNew();
         for (i = 0; i < 1024; i++) {
-            is = intsetAdd(is,rand()%0x800,&success);
+            is = intsetAdd(is,redisLrand48()%0x800,&success);
             if (success) inserts++;
         }
         assert(intrev32ifbe(is->length) == inserts);
@@ -466,7 +467,7 @@ int intsetTest(int argc, char **argv) {
         checkConsistency(is);
 
         start = usec();
-        for (i = 0; i < num; i++) intsetSearch(is,rand() % ((1<<bits)-1),NULL);
+        for (i = 0; i < num; i++) intsetSearch(is,redisLrand48() % ((1<<bits)-1),NULL);
         printf("%ld lookups, %ld element set, %lldusec\n",
                num,size,usec()-start);
     }
@@ -475,11 +476,11 @@ int intsetTest(int argc, char **argv) {
         int i, v1, v2;
         is = intsetNew();
         for (i = 0; i < 0xffff; i++) {
-            v1 = rand() % 0xfff;
+            v1 = redisLrand48() % 0xfff;
             is = intsetAdd(is,v1,NULL);
             assert(intsetFind(is,v1));
 
-            v2 = rand() % 0xfff;
+            v2 = redisLrand48() % 0xfff;
             is = intsetRemove(is,v2,NULL);
             assert(!intsetFind(is,v2));
         }

@@ -1,4 +1,13 @@
-/* Pseudo random number generation functions derived from the drand48()
+/* Further modified by Bruce Merry for birdisle, to provide separate
+ * random streams for Lua and for main redis usage.
+ *
+ * The stream used internally by redis uses the platform's nrand48 function, so
+ * does not necessarily produce the same results on all machines, but is
+ * potentially faster.
+ *
+ * ----------------------------------------------------------------------------
+ *
+ * Pseudo random number generation functions derived from the drand48()
  * function obtained from pysam source code.
  *
  * This functions are used in order to replace the default math.random()
@@ -41,7 +50,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "fmacros.h"
 #include <stdint.h>
+#include <stdlib.h>
+#include "rand.h"
 
 #define N	16
 #define MASK	((1 << (N - 1)) + (1 << (N - 1)) - 1)
@@ -65,19 +77,29 @@
 		return (v);
 #define HI_BIT	(1L << (2 * N - 1))
 
-static __thread uint32_t x[3] = { X0, X1, X2 }, a[3] = { A0, A1, A2 }, c = C;
-static void next(void);
+static __thread unsigned short x[3] = { X0, X1, X2 };
+static __thread uint32_t xLua[3] = { X0, X1, X2 };
+static const uint32_t a[3] = { A0, A1, A2 }, c = C;
+static void next(uint32_t x[3]);
 
 int32_t redisLrand48() {
-    next();
-    return (((int32_t)x[2] << (N - 1)) + (x[1] >> 1));
+    return nrand48(x);
+}
+
+int32_t redisLrand48Lua() {
+    next(xLua);
+    return (((int32_t)xLua[2] << (N - 1)) + (xLua[1] >> 1));
 }
 
 void redisSrand48(int32_t seedval) {
-    SEED(X0, LOW(seedval), HIGH(seedval));
+    SET3(x, X0, LOW(seedval), HIGH(seedval));
 }
 
-static void next(void) {
+void redisSrand48Lua(int32_t seedval) {
+    SET3(xLua, X0, LOW(seedval), HIGH(seedval));
+}
+
+static void next(uint32_t x[3]) {
     uint32_t p[2], q[2], r[2], carry0, carry1;
 
     MUL(a[0], x[0], p);

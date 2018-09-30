@@ -30,6 +30,7 @@
  */
 
 #include "server.h"
+#include "rand.h"
 
 #include <stdint.h>
 #include <math.h>
@@ -1395,7 +1396,7 @@ void pfselftestCommand(client *c) {
         /* Set the HLL counters and an array of unsigned byes of the
          * same size to the same set of random values. */
         for (i = 0; i < HLL_REGISTERS; i++) {
-            unsigned int r = rand() & HLL_REGISTER_MAX;
+            unsigned int r = redisLrand48() & HLL_REGISTER_MAX;
 
             bytecounters[i] = r;
             HLL_DENSE_SET_REGISTER(hdr->registers,i,r);
@@ -1428,7 +1429,7 @@ void pfselftestCommand(client *c) {
     o = createHLLObject();
     double relerr = 1.04/sqrt(HLL_REGISTERS);
     int64_t checkpoint = 1;
-    uint64_t seed = (uint64_t)rand() | (uint64_t)rand() << 32;
+    uint64_t seed = (uint64_t)redisLrand48() | (uint64_t)redisLrand48() << 32;
     uint64_t ele;
     for (j = 1; j <= 10000000; j++) {
         ele = j ^ seed;

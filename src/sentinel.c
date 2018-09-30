@@ -31,6 +31,7 @@
 #include "server.h"
 #include "hiredis.h"
 #include "async.h"
+#include "rand.h"
 
 #include <ctype.h>
 #include <arpa/inet.h>
@@ -3781,7 +3782,7 @@ char *sentinelVoteLeader(sentinelRedisInstance *master, uint64_t req_epoch, char
          * time to now, in order to force a delay before we can start a
          * failover for the same master. */
         if (strcasecmp(master->leader,sentinel.myid))
-            master->failover_start_time = mstime()+rand()%SENTINEL_MAX_DESYNC;
+            master->failover_start_time = mstime()+redisLrand48()%SENTINEL_MAX_DESYNC;
     }
 
     *leader_epoch = master->leader_epoch;
@@ -3964,7 +3965,7 @@ void sentinelStartFailover(sentinelRedisInstance *master) {
     sentinelEvent(LL_WARNING,"+new-epoch",master,"%llu",
         (unsigned long long) sentinel.current_epoch);
     sentinelEvent(LL_WARNING,"+try-failover",master,"%@");
-    master->failover_start_time = mstime()+rand()%SENTINEL_MAX_DESYNC;
+    master->failover_start_time = mstime()+redisLrand48()%SENTINEL_MAX_DESYNC;
     master->failover_state_change_time = mstime();
 }
 
@@ -4493,6 +4494,6 @@ void sentinelTimer(void) {
      * exactly continue to stay synchronized asking to be voted at the
      * same time again and again (resulting in nobody likely winning the
      * election because of split brain voting). */
-    server.hz = CONFIG_DEFAULT_HZ + rand() % CONFIG_DEFAULT_HZ;
+    server.hz = CONFIG_DEFAULT_HZ + redisLrand48() % CONFIG_DEFAULT_HZ;
 }
 

@@ -33,6 +33,7 @@
 #include "bio.h"
 #include "latency.h"
 #include "atomicvar.h"
+#include "rand.h"
 
 #include <time.h>
 #include <signal.h>
@@ -4084,7 +4085,7 @@ int redisMain(int metafd, int argc, char **argv) {
     setupLocale();
     tzset(); /* Populates 'timezone' global. */
     zmalloc_set_oom_handler(redisOutOfMemoryHandler);
-    srand(time(NULL)^getpid());
+    redisSrand48(time(NULL)^getpid());
     gettimeofday(&tv,NULL);
 
     char hashseed[16];

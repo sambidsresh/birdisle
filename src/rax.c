@@ -35,6 +35,7 @@
 #include <errno.h>
 #include <math.h>
 #include "rax.h"
+#include "rand.h"
 
 #ifndef RAX_MALLOC_INCLUDE
 #define RAX_MALLOC_INCLUDE "rax_malloc.h"
@@ -1645,13 +1646,13 @@ int raxRandomWalk(raxIterator *it, size_t steps) {
     if (steps == 0) {
         size_t fle = floor(log(it->rt->numele));
         fle *= 2;
-        steps = 1 + rand() % fle;
+        steps = 1 + redisLrand48() % fle;
     }
 
     raxNode *n = it->node;
     while(steps > 0 || !n->iskey) {
         int numchildren = n->iscompr ? 1 : n->size;
-        int r = rand() % (numchildren+(n != it->rt->head));
+        int r = redisLrand48() % (numchildren+(n != it->rt->head));
 
         if (r == numchildren) {
             /* Go up to parent. */

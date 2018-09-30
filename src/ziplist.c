@@ -189,6 +189,7 @@
 #include "ziplist.h"
 #include "endianconv.h"
 #include "redisassert.h"
+#include "rand.h"
 
 #define ZIP_END 255         /* Special "end of ziplist" entry. */
 #define ZIP_BIG_PREVLEN 254 /* Max number of bytes of the previous entry, for
@@ -1338,9 +1339,9 @@ static unsigned char *pop(unsigned char *zl, int where) {
 
 static int randstring(char *target, unsigned int min, unsigned int max) {
     int p = 0;
-    int len = min+rand()%(max-min+1);
+    int len = min+redisLrand48()%(max-min+1);
     int minval, maxval;
-    switch(rand() % 3) {
+    switch(redisLrand48() % 3) {
     case 0:
         minval = 0;
         maxval = 255;
@@ -1358,7 +1359,7 @@ static int randstring(char *target, unsigned int min, unsigned int max) {
     }
 
     while(p < len)
-        target[p++] = minval+rand()%(maxval-minval+1);
+        target[p++] = minval+redisLrand48()%(maxval-minval+1);
     return len;
 }
 
@@ -1387,7 +1388,7 @@ int ziplistTest(int argc, char **argv) {
 
     /* If an argument is given, use it as the random seed. */
     if (argc == 2)
-        srand(atoi(argv[1]));
+        redisSrand48(atoi(argv[1]));
 
     zl = createIntList();
     ziplistRepr(zl);
@@ -1862,23 +1863,23 @@ int ziplistTest(int argc, char **argv) {
             zl = ziplistNew();
             ref = listCreate();
             listSetFreeMethod(ref,(void (*)(void*))sdsfree);
-            len = rand() % 256;
+            len = redisLrand48() % 256;
 
             /* Create lists */
             for (j = 0; j < len; j++) {
-                where = (rand() & 1) ? ZIPLIST_HEAD : ZIPLIST_TAIL;
-                if (rand() % 2) {
+                where = (redisLrand48() & 1) ? ZIPLIST_HEAD : ZIPLIST_TAIL;
+                if (redisLrand48() % 2) {
                     buflen = randstring(buf,1,sizeof(buf)-1);
                 } else {
-                    switch(rand() % 3) {
+                    switch(redisLrand48() % 3) {
                     case 0:
-                        buflen = sprintf(buf,"%lld",(0LL + rand()) >> 20);
+                        buflen = sprintf(buf,"%lld",(0LL + redisLrand48()) >> 20);
                         break;
                     case 1:
-                        buflen = sprintf(buf,"%lld",(0LL + rand()));
+                        buflen = sprintf(buf,"%lld",(0LL + redisLrand48()));
                         break;
                     case 2:
-                        buflen = sprintf(buf,"%lld",(0LL + rand()) << 20);
+                        buflen = sprintf(buf,"%lld",(0LL + redisLrand48()) << 20);
                         break;
                     default:
                         assert(NULL);

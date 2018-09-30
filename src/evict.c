@@ -33,6 +33,7 @@
 #include "server.h"
 #include "bio.h"
 #include "atomicvar.h"
+#include "rand.h"
 
 /* ----------------------------------------------------------------------------
  * Data structures
@@ -314,7 +315,7 @@ unsigned long LFUTimeElapsed(unsigned long ldt) {
  * the less likely is that it gets really implemented. Saturate it at 255. */
 uint8_t LFULogIncr(uint8_t counter) {
     if (counter == 255) return 255;
-    double r = (double)rand()/RAND_MAX;
+    double r = (double)redisLrand48()/REDIS_LRAND48_MAX;
     double baseval = counter - LFU_INIT_VAL;
     if (baseval < 0) baseval = 0;
     double p = 1.0/(baseval*server.lfu_log_factor+1);
