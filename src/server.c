@@ -2018,6 +2018,8 @@ void initServer(void) {
     signal(SIGHUP, SIG_IGN);
     signal(SIGPIPE, SIG_IGN);
     setupSignalHandlers();
+#else
+    blockSignals();
 #endif
 
     if (server.syslog_enabled) {
@@ -3856,6 +3858,25 @@ void setupSignalHandlers(void) {
     sigaction(SIGILL, &act, NULL);
 #endif
     return;
+}
+
+void blockSignals(void) {
+    /* birdisle: block majority of signals in this thread. This doesn't
+     * prevent the main thread from handling them if there is a signal handler.
+     * This prevents system calls in this thread from being interrupted,
+     * which is problematic as they are generally not restarted on EINTR.
+     */
+    sigset_t set;
+
+    sigfillset(&set);
+    /* Remove some signals that are typically self-generated rather than
+     * sent to the process from outside.
+     */
+    sigdelset(&set, SIGSEGV);
+    sigdelset(&set, SIGFPE);
+    sigdelset(&set, SIGBUS);
+    sigdelset(&set, SIGILL);
+    pthread_sigmask(SIG_BLOCK, &set, NULL);
 }
 
 void memtest(size_t megabytes, int passes);

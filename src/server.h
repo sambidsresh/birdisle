@@ -1697,6 +1697,7 @@ size_t freeMemoryGetNotCountedMemory(void);
 int freeMemoryIfNeeded(void);
 int processCommand(client *c);
 void setupSignalHandlers(void);
+void blockSignals(void);
 struct redisCommand *lookupCommand(sds name);
 struct redisCommand *lookupCommandByCString(char *s);
 struct redisCommand *lookupCommandOrOriginal(sds name);
