@@ -545,7 +545,7 @@ static void cliIntegrateHelp(void) {
             ch->params = sdscat(ch->params,"key ");
             args--;
         }
-        while(args--) ch->params = sdscat(ch->params,"arg ");
+        while(args-- > 0) ch->params = sdscat(ch->params,"arg ");
         if (entry->element[1]->integer < 0)
             ch->params = sdscat(ch->params,"...options...");
         ch->summary = "Help not available";
@@ -1088,6 +1088,7 @@ static int cliSendCommand(int argc, char **argv, long repeat) {
 
     output_raw = 0;
     if (!strcasecmp(command,"info") ||
+        !strcasecmp(command,"lolwut") ||
         (argc >= 2 && !strcasecmp(command,"debug") &&
                        !strcasecmp(argv[1],"htstats")) ||
         (argc >= 2 && !strcasecmp(command,"debug") &&
@@ -1154,7 +1155,7 @@ static int cliSendCommand(int argc, char **argv, long repeat) {
         }
 
         if (config.slave_mode) {
-            printf("Entering slave output mode...  (press Ctrl-C to quit)\n");
+            printf("Entering replica output mode...  (press Ctrl-C to quit)\n");
             slaveMode();
             config.slave_mode = 0;
             zfree(argvlen);
@@ -1171,16 +1172,6 @@ static int cliSendCommand(int argc, char **argv, long repeat) {
                 cliRefreshPrompt();
             } else if (!strcasecmp(command,"auth") && argc == 2) {
                 cliSelect();
-            }
-
-
-            /*  Issue the command again if we got redirected in cluster mode  */
-            if  (config.cluster_mode  &&  config.cluster_reissue_command)  {
-                cliConnect(CC_FORCE);
-                config.cluster_reissue_command  =  0;
-                /* for a '-MOVED' or '-ASK' response, we need to issue the command again, so
-                 * add repeat by 1. */
-                repeat++;
             }
         }
         if (config.interval) usleep(config.interval);
@@ -1281,6 +1272,8 @@ static int parseOptions(int argc, char **argv) {
             config.lru_test_mode = 1;
             config.lru_test_sample_size = strtoll(argv[++i],NULL,10);
         } else if (!strcmp(argv[i],"--slave")) {
+            config.slave_mode = 1;
+        } else if (!strcmp(argv[i],"--replica")) {
             config.slave_mode = 1;
         } else if (!strcmp(argv[i],"--stat")) {
             config.stat_mode = 1;
@@ -1478,7 +1471,7 @@ static void usage(void) {
 "  --latency-dist     Shows latency as a spectrum, requires xterm 256 colors.\n"
 "                     Default time interval is 1 sec. Change it using -i.\n"
 "  --lru-test <keys>  Simulate a cache workload with an 80-20 distribution.\n"
-"  --slave            Simulate a slave showing commands received from the master.\n"
+"  --replica          Simulate a replica showing commands received from the master.\n"
 "  --rdb <filename>   Transfer an RDB dump from remote server to local file.\n"
 "  --pipe             Transfer raw Redis protocol from stdin to server.\n"
 "  --pipe-timeout <n> In --pipe mode, abort with error if after sending all data.\n"
@@ -1495,7 +1488,7 @@ static void usage(void) {
 "  --ldb              Used with --eval enable the Redis Lua debugger.\n"
 "  --ldb-sync-mode    Like --ldb but uses the synchronous Lua debugger, in\n"
 "                     this mode the server is blocked and script changes are\n"
-"                     are not rolled back from the server memory.\n"
+"                     not rolled back from the server memory.\n"
 "  --cluster <command> [args...] [opts...]\n"
 "                     Cluster Manager command and arguments (see below).\n"
 "  --verbose          Verbose mode.\n"
@@ -1560,8 +1553,13 @@ static int issueCommandRepeat(int argc, char **argv, long repeat) {
                 cliPrintContextError();
                 return REDIS_ERR;
             }
-        } else
-            break;
+         }
+         /* Issue the command again if we got redirected in cluster mode */
+         if (config.cluster_mode && config.cluster_reissue_command) {
+            cliConnect(CC_FORCE);
+         } else {
+             break;
+        }
     }
     return REDIS_OK;
 }
@@ -3731,6 +3729,7 @@ static int clusterManagerFixOpenSlot(int slot) {
     while ((ln = listNext(&li)) != NULL) {
         clusterManagerNode *n = ln->value;
         if (n->flags & CLUSTER_MANAGER_FLAG_SLAVE) continue;
+        int is_migrating = 0, is_importing = 0;
         if (n->migrating) {
             for (int i = 0; i < n->migrating_count; i += 2) {
                 sds migrating_slot = n->migrating[i];
@@ -3739,11 +3738,12 @@ static int clusterManagerFixOpenSlot(int slot) {
                     migrating_str = sdscatfmt(migrating_str, "%s%S:%u",
                                               sep, n->ip, n->port);
                     listAddNodeTail(migrating, n);
+                    is_migrating = 1;
                     break;
                 }
             }
         }
-        if (n->importing) {
+        if (!is_migrating && n->importing) {
             for (int i = 0; i < n->importing_count; i += 2) {
                 sds importing_slot = n->importing[i];
                 if (atoi(importing_slot) == slot) {
@@ -3751,9 +3751,26 @@ static int clusterManagerFixOpenSlot(int slot) {
                     importing_str = sdscatfmt(importing_str, "%s%S:%u",
                                               sep, n->ip, n->port);
                     listAddNodeTail(importing, n);
+                    is_importing = 1;
                     break;
                 }
             }
+        }
+        /* If the node is neither migrating nor importing and it's not
+         * the owner, then is added to the importing list in case
+         * it has keys in the slot. */
+        if (!is_migrating && !is_importing && n != owner) {
+            redisReply *r = CLUSTER_MANAGER_COMMAND(n,
+                "CLUSTER COUNTKEYSINSLOT %d", slot);
+            success = clusterManagerCheckRedisReply(n, r, NULL);
+            if (success && r->integer > 0) {
+                clusterManagerLogWarn("*** Found keys about slot %d "
+                                      "in node %s:%d!\n", slot, n->ip,
+                                      n->port);
+                listAddNodeTail(importing, n);
+            }
+            if (r) freeReplyObject(r);
+            if (!success) goto cleanup;
         }
     }
     printf("Set as migrating in: %s\n", migrating_str);

@@ -777,7 +777,7 @@ int luaRedisSetReplCommand(lua_State *lua) {
 
     flags = lua_tonumber(lua,-1);
     if ((flags & ~(PROPAGATE_AOF|PROPAGATE_REPL)) != 0) {
-        lua_pushstring(lua, "Invalid replication flags. Use REPL_AOF, REPL_SLAVE, REPL_ALL or REPL_NONE.");
+        lua_pushstring(lua, "Invalid replication flags. Use REPL_AOF, REPL_REPLICA, REPL_ALL or REPL_NONE.");
         return lua_error(lua);
     }
     server.lua_repl = flags;
@@ -995,6 +995,10 @@ void scriptingInit(int setup) {
     lua_settable(lua,-3);
 
     lua_pushstring(lua,"REPL_SLAVE");
+    lua_pushnumber(lua,PROPAGATE_REPL);
+    lua_settable(lua,-3);
+
+    lua_pushstring(lua,"REPL_REPLICA");
     lua_pushnumber(lua,PROPAGATE_REPL);
     lua_settable(lua,-3);
 
@@ -1238,7 +1242,7 @@ void luaMaskCountHook(lua_State *lua, lua_Debug *ar) {
          * we need to mask the client executing the script from the event loop.
          * If we don't do that the client may disconnect and could no longer be
          * here when the EVAL command will return. */
-         aeDeleteFileEvent(server.el, server.lua_caller->fd, AE_READABLE);
+        protectClient(server.lua_caller);
     }
     if (server.lua_timedout) processEventsWhileBlocked();
     if (server.lua_kill) {
@@ -1366,10 +1370,9 @@ void evalGenericCommand(client *c, int evalsha) {
     if (delhook) lua_sethook(lua,NULL,0,0); /* Disable hook */
     if (server.lua_timedout) {
         server.lua_timedout = 0;
-        /* Restore the readable handler that was unregistered when the
-         * script timeout was detected. */
-        aeCreateFileEvent(server.el,c->fd,AE_READABLE,
-                          readQueryFromClient,c);
+        /* Restore the client that was protected when the script timeout
+         * was detected. */
+        unprotectClient(c);
         if (server.masterhost && server.master)
             queueClientForReprocessing(server.master);
     }
@@ -1484,7 +1487,7 @@ void scriptCommand(client *c) {
         const char *help[] = {
 "DEBUG (yes|sync|no) -- Set the debug mode for subsequent scripts executed.",
 "EXISTS <sha1> [<sha1> ...] -- Return information about the existence of the scripts in the script cache.",
-"FLUSH -- Flush the Lua scripts cache. Very dangerous on slaves.",
+"FLUSH -- Flush the Lua scripts cache. Very dangerous on replicas.",
 "KILL -- Kill the currently executing Lua script.",
 "LOAD <script> -- Load a script into the scripts cache, without executing it.",
 NULL

@@ -1,7 +1,4 @@
-/* Timer API example -- Register and handle timer events
- *
- * -----------------------------------------------------------------------------
- *
+/*
  * Copyright (c) 2018, Salvatore Sanfilippo <antirez at gmail dot com>
  * All rights reserved.
  *
@@ -28,49 +25,32 @@
  * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
+ *
+ * ----------------------------------------------------------------------------
+ *
+ * This file implements the LOLWUT command. The command should do something
+ * fun and interesting, and should be replaced by a new implementation at
+ * each new version of Redis.
  */
 
-#define REDISMODULE_EXPERIMENTAL_API
-#include "../redismodule.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <ctype.h>
-#include <string.h>
+#include "server.h"
 
-/* Timer callback. */
-void timerHandler(RedisModuleCtx *ctx, void *data) {
-    REDISMODULE_NOT_USED(ctx);
-    printf("Fired %s!\n", data);
-    RedisModule_Free(data);
+void lolwut5Command(client *c);
+
+/* The default target for LOLWUT if no matching version was found.
+ * This is what unstable versions of Redis will display. */
+void lolwutUnstableCommand(client *c) {
+    sds rendered = sdsnew("Redis ver. ");
+    rendered = sdscat(rendered,REDIS_VERSION);
+    rendered = sdscatlen(rendered,"\n",1);
+    addReplyBulkSds(c,rendered);
 }
 
-/* HELLOTIMER.TIMER*/
-int TimerCommand_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    REDISMODULE_NOT_USED(argv);
-    REDISMODULE_NOT_USED(argc);
-
-    for (int j = 0; j < 10; j++) {
-        int delay = rand() % 5000;
-        char *buf = RedisModule_Alloc(256);
-        snprintf(buf,256,"After %d", delay);
-        RedisModuleTimerID tid = RedisModule_CreateTimer(ctx,delay,timerHandler,buf);
-        REDISMODULE_NOT_USED(tid);
-    }
-    return RedisModule_ReplyWithSimpleString(ctx, "OK");
-}
-
-/* This function must be present on each Redis module. It is used in order to
- * register the commands into the Redis server. */
-int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    REDISMODULE_NOT_USED(argv);
-    REDISMODULE_NOT_USED(argc);
-
-    if (RedisModule_Init(ctx,"hellotimer",1,REDISMODULE_APIVER_1)
-        == REDISMODULE_ERR) return REDISMODULE_ERR;
-
-    if (RedisModule_CreateCommand(ctx,"hellotimer.timer",
-        TimerCommand_RedisCommand,"readonly",0,0,0) == REDISMODULE_ERR)
-        return REDISMODULE_ERR;
-
-    return REDISMODULE_OK;
+void lolwutCommand(client *c) {
+    char *v = REDIS_VERSION;
+    if ((v[0] == '5' && v[1] == '.') ||
+        (v[0] == '4' && v[1] == '.' && v[2] == '9'))
+        lolwut5Command(c);
+    else
+        lolwutUnstableCommand(c);
 }
