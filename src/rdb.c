@@ -1280,6 +1280,10 @@ werr:
 }
 
 int rdbSaveBackground(char *filename, rdbSaveInfo *rsi) {
+    UNUSED(filename);
+    UNUSED(rsi);
+    return C_ERR;   /* Disabled for birdisle */
+#if 0
     pid_t childpid;
     long long start;
 
@@ -1330,6 +1334,7 @@ int rdbSaveBackground(char *filename, rdbSaveInfo *rsi) {
         return C_OK;
     }
     return C_OK; /* unreached */
+#endif
 }
 
 void rdbRemoveTempFile(pid_t childpid) {
@@ -2225,6 +2230,9 @@ void backgroundSaveDoneHandler(int exitcode, int bysignal) {
 /* Spawn an RDB child that writes the RDB to the sockets of the slaves
  * that are currently in SLAVE_STATE_WAIT_BGSAVE_START state. */
 int rdbSaveToSlavesSockets(rdbSaveInfo *rsi) {
+    UNUSED(rsi);
+    return C_ERR;
+#if 0  /* Disabled for birdisle */
     int *fds;
     uint64_t *clientids;
     int numfds;
@@ -2381,6 +2389,7 @@ int rdbSaveToSlavesSockets(rdbSaveInfo *rsi) {
         return (childpid == -1) ? C_ERR : C_OK;
     }
     return C_OK; /* Unreached. */
+#endif
 }
 
 void saveCommand(client *c) {
@@ -2412,6 +2421,9 @@ void bgsaveCommand(client *c) {
         }
     }
 
+    addReplyError(c,"Background save not supported for birdisle");
+    UNUSED(schedule);
+#if 0
     rdbSaveInfo rsi, *rsiptr;
     rsiptr = rdbPopulateSaveInfo(&rsi);
 
@@ -2432,6 +2444,7 @@ void bgsaveCommand(client *c) {
     } else {
         addReply(c,shared.err);
     }
+#endif
 }
 
 /* Populate the rdbSaveInfo structure used to persist the replication

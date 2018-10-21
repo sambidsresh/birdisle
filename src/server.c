@@ -1259,6 +1259,7 @@ int serverCron(struct aeEventLoop *eventLoop, long long id, void *clientData) {
             closeChildInfoPipe();
         }
     } else {
+#if 0  /* Disabled for birdisle */
         /* If there is not a background saving/rewrite in progress check if
          * we have to save/rewrite now. */
         for (j = 0; j < server.saveparamslen; j++) {
@@ -1298,6 +1299,7 @@ int serverCron(struct aeEventLoop *eventLoop, long long id, void *clientData) {
                 rewriteAppendOnlyFileBackground();
             }
         }
+#endif
     }
 
 
