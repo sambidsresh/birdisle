@@ -1533,8 +1533,13 @@ NULL
             ldbDisable(c);
             addReply(c,shared.ok);
         } else if (!strcasecmp(c->argv[2]->ptr,"yes")) {
+#if 0  /* Disabled for birdisle */
             ldbEnable(c);
             addReply(c,shared.ok);
+#else
+            addReplyError(c,"SCRIPT DEBUG yes is not supported by birdisle");
+#endif
+
         } else if (!strcasecmp(c->argv[2]->ptr,"sync")) {
             ldbEnable(c);
             addReply(c,shared.ok);
@@ -1652,6 +1657,7 @@ void ldbSendLogs(void) {
  * The caller should call ldbEndSession() only if ldbStartSession()
  * returned 1. */
 int ldbStartSession(client *c) {
+#if 0   /* Disabled for birdisle */
     ldb.forked = (c->flags & CLIENT_LUA_DEBUG_SYNC) == 0;
     if (ldb.forked) {
         pid_t cp = fork();
@@ -1678,7 +1684,9 @@ int ldbStartSession(client *c) {
             freeClientAsync(c); /* Close the client in the parent side. */
             return 0;
         }
-    } else {
+    } else
+#endif
+    {
         serverLog(LL_WARNING,
             "Redis synchronous debugging eval session started");
     }
