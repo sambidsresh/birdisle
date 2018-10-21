@@ -17,6 +17,8 @@ subject to breaking changes. The API is in `birdisle.h`.
 
 Call `birdisleStartServer(config)` to start a thread running redis. It takes the contents
 of a config file (optional) and returns an opaque handle of type `birdisleServer *`.
+Note that not all configuration is safe to set — see the
+[Limitations](#limitations) below.
 
 To create a connection to the server, call `birdisleAddConnection(handle, fd)`
 where `handle` is the handle returned by `birdisleStartServer`, and `fd` is the
@@ -24,11 +26,6 @@ end of a socket that birdisle will use for communication. It could, for
 example, be one end of a socketpair(2).
 
 To terminate and clean up a server, call `birdisleStopServer(handle)`.
-
-At present there is no way to specify start-up configuration (that may change
-in future), but one can use the `CONFIG` command to modify configuration.
-However, not all configuration is safe to touch - see the
-[Limitations](#limitations) below.
 
 ## Bindings
 
