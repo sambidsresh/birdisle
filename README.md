@@ -43,19 +43,23 @@ be used in a production environment where data persistence is a concern.
 
 Specific variances from stock redis include
 
-- Commands that would normally run in the background now run in the foreground,
-  blocking the entire server.
+- Some actions that would normally run in the background now run in the
+  foreground, blocking the entire server.
 - The number of open file handles is not adjusted. Attempting to make large
   numbers of connections may have dire consequences.
-- Lua debugging is not supported.
+- Lua debugging is not supported (although ``SCRIPT DEBUG sync`` might work).
 - Sentinel is not supported.
 - Cluster mode is not supported.
 - Modules that create background threads are not supported.
-- Persistence (both RDB and AOF) is not supported.
-- Memory overheads are higher (in some cases, significantly higher)
+- RDB files have limited support. The ``BGSAVE`` command is not supported at
+  all, and the RDB file will only be updated on explicit request via ``SAVE``
+  or ``SHUTDOWN``.
+- AOF files have limited support. It cannot be enabled after the server has
+  started, and rewriting (e.g. with ``BGREWRITEAOF``) is not supported.
+- Memory overheads are higher (in some cases, significantly higher).
 - It does not catch signals. If a graceful shutdown is required, the host
   process must catch and handle the signal.
-- All logging is disabled.
+- Logging is disabled by default.
 - Server shutdown is slower, because it takes some care to release all the
   allocated resources, rather than leaving it to the OS to clean up.
 
