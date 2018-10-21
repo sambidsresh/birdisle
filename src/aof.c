@@ -1533,6 +1533,9 @@ int rewriteAppendOnlyFileBackground(void) {
     pid_t childpid;
     long long start;
 
+    serverLog(LL_WARNING, "AOF rewrites not supported by birdisle");
+    return C_ERR;
+
     if (server.aof_child_pid != -1 || server.rdb_child_pid != -1) return C_ERR;
     if (aofCreatePipes() != C_OK) return C_ERR;
     openChildInfoPipe();
@@ -1590,6 +1593,9 @@ int rewriteAppendOnlyFileBackground(void) {
 }
 
 void bgrewriteaofCommand(client *c) {
+    addReplyError(c,"Background append only file rewriting not supported by birdisle");
+    return;
+
     if (server.aof_child_pid != -1) {
         addReplyError(c,"Background append only file rewriting already in progress");
     } else if (server.rdb_child_pid != -1) {

@@ -962,7 +962,7 @@ void configSetCommand(client *c) {
         } else if (enable && server.aof_state == AOF_OFF) {
             if (startAppendOnly() == C_ERR) {
                 addReplyError(c,
-                    "Unable to turn on AOF. Check server logs.");
+                    "Unable to turn on AOF (not supported after startup in birdisle).");
                 return;
             }
         }
