@@ -23,7 +23,7 @@ where `handle` is the handle returned by `birdisleStartServer`, and `fd` is the
 end of a socket that birdisle will use for communication. It could, for
 example, be one end of a socketpair(2).
 
-To terminate and clean up a server, call `birdisleServer(handle)`.
+To terminate and clean up a server, call `birdisleStopServer(handle)`.
 
 At present there is no way to specify start-up configuration (that may change
 in future), but one can use the `CONFIG` command to modify configuration.
