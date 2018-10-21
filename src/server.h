@@ -83,7 +83,7 @@ typedef long long mstime_t; /* millisecond time type. */
 #define CONFIG_MIN_HZ            1
 #define CONFIG_MAX_HZ            500
 #define MAX_CLIENTS_PER_CLOCK_TICK 200          /* HZ is adapted based on that. */
-#define CONFIG_DEFAULT_SERVER_PORT        6379  /* TCP port. */
+#define CONFIG_DEFAULT_SERVER_PORT        0     /* TCP port. */
 #define CONFIG_DEFAULT_TCP_BACKLOG       511    /* TCP listen backlog. */
 #define CONFIG_DEFAULT_CLIENT_TIMEOUT       0   /* Default client timeout: infinite */
 #define CONFIG_DEFAULT_DBNUM     16
@@ -121,7 +121,7 @@ typedef long long mstime_t; /* millisecond time type. */
 #define CONFIG_DEFAULT_UNIX_SOCKET_PERM 0
 #define CONFIG_DEFAULT_TCP_KEEPALIVE 300
 #define CONFIG_DEFAULT_PROTECTED_MODE 1
-#define CONFIG_DEFAULT_LOGFILE ""
+#define CONFIG_DEFAULT_LOGFILE "/dev/null"
 #define CONFIG_DEFAULT_SYSLOG_ENABLED 0
 #define CONFIG_DEFAULT_STOP_WRITES_ON_BGSAVE_ERROR 1
 #define CONFIG_DEFAULT_RDB_COMPRESSION 1
@@ -2154,6 +2154,6 @@ void xorDigest(unsigned char *digest, void *ptr, size_t len);
 #define redisDebugMark() \
     printf("-- MARK %s:%d --\n", __FILE__, __LINE__)
 
-int redisMain(int metafd, int argc, char **argv);
+int redisMain(int metafd, int argc, char **argv, char *config_override);
 
 #endif

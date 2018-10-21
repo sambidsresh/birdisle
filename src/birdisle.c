@@ -9,21 +9,26 @@ struct birdisleServer {
     int metafd[2];
     pthread_t thread;
     pthread_mutex_t mutex;  /* Serialises calls to birdisleAddConnection */
+    char *config;
 };
 
 void *serverThread(void *arg) {
     int exit_code;
     birdisleServer *handle = (birdisleServer *) arg;
-    char *argv[] = {"redis", "--port", "0", "--logfile", "/dev/null", NULL};
+    char *argv[] = {"redis", NULL};
 
-    exit_code = redisMain(handle->metafd[0], sizeof(argv) / sizeof(argv[0]) - 1, argv);
+    exit_code = redisMain(
+        handle->metafd[0], sizeof(argv) / sizeof(argv[0]) - 1, argv, handle->config);
     return (void *) (intptr_t) exit_code;
 }
 
-birdisleServer *birdisleStartServer(void) {
+birdisleServer *birdisleStartServer(const char *config) {
     int err;
 
+    if (!config)
+        config = "";
     birdisleServer *handle = zmalloc(sizeof(birdisleServer));
+    handle->config = zstrdup(config);
     if (pipe(handle->metafd) == -1) {
         goto error1;
     }
@@ -43,6 +48,7 @@ error2:
     close(handle->metafd[0]);
     close(handle->metafd[1]);
 error1:
+    zfree(handle->config);
     zfree(handle);
     return NULL;
 }
@@ -56,6 +62,7 @@ int birdisleStopServer(birdisleServer *handle) {
         return -1;
     close(handle->metafd[0]);
     close(handle->metafd[1]);
+    zfree(handle->config);
     zfree(handle);
     return (int) (intptr_t) exit_code;
 }

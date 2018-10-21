@@ -4078,7 +4078,7 @@ static void setupLocale(void)
      */
 }
 
-int redisMain(int metafd, int argc, char **argv) {
+int redisMain(int metafd, int argc, char **argv, char *config_override) {
     struct timeval tv;
     int j;
 
@@ -4152,7 +4152,11 @@ int redisMain(int metafd, int argc, char **argv) {
     else if (strstr(argv[0],"redis-check-aof") != NULL)
         redis_check_aof_main(argc,argv);
 
-    if (argc >= 2) {
+    if (config_override) {
+        resetServerSaveParams();
+        loadServerConfig(NULL,config_override);
+    }
+    else if (argc >= 2) {
         j = 1; /* First option to parse in argv[] */
         sds options = sdsempty();
         char *configfile = NULL;
