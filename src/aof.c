@@ -240,6 +240,8 @@ void stopAppendOnly(void) {
 /* Called when the user switches from "appendonly no" to "appendonly yes"
  * at runtime using the CONFIG command. */
 int startAppendOnly(void) {
+    return C_ERR;
+#if 0  /* Disabled for birdisle */
     char cwd[MAXPATHLEN]; /* Current working dir path for error messages. */
     int newfd;
 
@@ -279,6 +281,7 @@ int startAppendOnly(void) {
     server.aof_last_fsync = server.unixtime;
     server.aof_fd = newfd;
     return C_OK;
+#endif
 }
 
 /* This is a wrapper to the write syscall in order to retry on short writes
