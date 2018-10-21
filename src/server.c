@@ -3736,6 +3736,7 @@ void createPidFile(void) {
 }
 
 void daemonize(void) {
+#if 0   /* Disabled for birdisle */
     int fd;
 
     if (fork() != 0) exit(0); /* parent exits */
@@ -3750,6 +3751,7 @@ void daemonize(void) {
         dup2(fd, STDERR_FILENO);
         if (fd > STDERR_FILENO) close(fd);
     }
+#endif
 }
 
 void version(void) {
