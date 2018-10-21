@@ -1,7 +1,7 @@
 # Birdisle - an in-process redis
 
 Birdisle (an anagram of "lib redis") is a modified version of
-[redis](https://redis.io) that run as a library inside another process. The
+[redis](https://redis.io) that runs as a library inside another process. The
 primary aim is to simplify unit testing by providing a way to run tests
 against what appears to be a redis server, but without the hassle of starting a
 separate process and ensuring that it is torn down correctly.
@@ -15,8 +15,8 @@ documentation, are relevant to redis rather than birdisle.
 Birdisle has a very simple API, but as it is in early development it is still
 subject to breaking changes. The API is in `birdisle.h`.
 
-Call `birdisleStartServer()` to start a thread running redis. It returns an
-opaque handle of type `birdisleServer *`.
+Call `birdisleStartServer(config)` to start a thread running redis. It takes the contents
+of a config file (optional) and returns an opaque handle of type `birdisleServer *`.
 
 To create a connection to the server, call `birdisleAddConnection(handle, fd)`
 where `handle` is the handle returned by `birdisleStartServer`, and `fd` is the
