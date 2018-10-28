@@ -4681,8 +4681,15 @@ void moduleInitModulesSystem(void) {
 }
 
 void moduleReleaseModulesSystem(void) {
+    freeClient(moduleFreeContextReusedClient);
     close(server.module_blocked_pipe[0]);
     close(server.module_blocked_pipe[1]);
+    raxFree(Timers);
+    listRelease(moduleUnblockedClients);
+    listRelease(server.loadmodule_queue);
+    dictRelease(modules);
+    listRelease(moduleKeyspaceSubscribers);
+    dictRelease(server.moduleapi);
 }
 
 /* Load all the modules in the server.loadmodule_queue list, which is

@@ -2302,6 +2302,11 @@ void replicationScriptCacheInit(void) {
     server.repl_scriptcache_fifo = listCreate();
 }
 
+void replicationScriptCacheDone(void) {
+    dictRelease(server.repl_scriptcache_dict);
+    listRelease(server.repl_scriptcache_fifo);
+}
+
 /* Empty the script cache. Should be called every time we are no longer sure
  * that every slave knows about all the scripts in our set, or when the
  * current AOF "context" is no longer aware of the script. In general we

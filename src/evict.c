@@ -151,6 +151,16 @@ void evictionPoolAlloc(void) {
     EvictionPoolLRU = ep;
 }
 
+/* Free the pool created by evictionPoolAlloc */
+void evictionPoolFree(void) {
+    int j;
+    for (j = 0; j < EVPOOL_SIZE; j++) {
+        sdsfree(EvictionPoolLRU[j].cached);
+    }
+    zfree(EvictionPoolLRU);
+    EvictionPoolLRU = NULL;
+}
+
 /* This is an helper function for freeMemoryIfNeeded(), it is used in order
  * to populate the evictionPool with a few entries every time we want to
  * expire a key. Keys with idle time smaller than one of the current

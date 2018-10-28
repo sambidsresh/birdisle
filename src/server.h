@@ -48,6 +48,7 @@
 #include <netinet/in.h>
 #include <lua.h>
 #include <signal.h>
+#include <locale.h>
 
 typedef long long mstime_t; /* millisecond time type. */
 
@@ -929,6 +930,7 @@ struct redisServer {
     char *configfile;           /* Absolute config file path, or NULL */
     char *executable;           /* Absolute executable file path. */
     char **exec_argv;           /* Executable argv vector (copy). */
+    locale_t locale;            /* Thread-local locale */
     int dynamic_hz;             /* Change hz value depending on # of clients. */
     int config_hz;              /* Configured HZ value. May be different than
                                    the actual 'hz' field value if dynamic-hz
@@ -1585,6 +1587,7 @@ void replicationSetMaster(char *ip, int port);
 void replicationUnsetMaster(void);
 void refreshGoodSlavesCount(void);
 void replicationScriptCacheInit(void);
+void replicationScriptCacheDone(void);
 void replicationScriptCacheFlush(void);
 void replicationScriptCacheAdd(sds sha1);
 int replicationScriptCacheExists(sds sha1);
@@ -1888,7 +1891,7 @@ int redis_check_aof_main(int argc, char **argv);
 
 /* Scripting */
 void scriptingInit(int setup);
-void scriptingRelease(void);
+void scriptingRelease(int teardown);
 int ldbRemoveChild(pid_t pid);
 void ldbKillForkedSessions(void);
 int ldbPendingChildren(void);
@@ -1915,6 +1918,7 @@ size_t getSlaveKeyWithExpireCount(void);
 
 /* evict.c -- maxmemory handling and LRU eviction. */
 void evictionPoolAlloc(void);
+void evictionPoolFree(void);
 #define LFU_INIT_VAL 5
 unsigned long LFUGetTimeInMinutes(void);
 uint8_t LFULogIncr(uint8_t value);
