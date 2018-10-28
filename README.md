@@ -16,8 +16,8 @@ Birdisle has a very simple API, but as it is in early development it is still
 subject to breaking changes. The API is in `birdisle.h`.
 
 Call `birdisleStartServer(config)` to start a thread running redis. It takes the contents
-of a config file (optional) and returns an opaque handle of type `birdisleServer *`.
-Note that not all configuration is safe to set — see the
+of a config file (optional) and returns an opaque handle of type `birdisleServer *`, or
+`NULL` if startup failed. Note that not all configuration is safe to set — see the
 [Limitations](#limitations) below.
 
 To create a connection to the server, call `birdisleAddConnection(handle, fd)`
@@ -35,7 +35,7 @@ To terminate and clean up a server, call `birdisleStopServer(handle)`.
 
 Redis was never designed to be embedded in another process. To make it behave
 nicely with other code in the same process, some parts of redis that make it
-robust in a production environment need to be disabled. It should thus **not**
+robust in a production environment have been disabled. It should thus **not**
 be used in a production environment where data persistence is a concern.
 
 Specific variances from stock redis include
@@ -66,5 +66,5 @@ use them fail gracefully.
 
 ## Status
 
-Birdisle is still in **very** early development, and is not yet ready for use.
-More documentation will be written once it has stabilised.
+Birdisle is still in **very** early development, and is likely to still contain
+bugs and rough edges. Bug reports and pull requests are welcome.

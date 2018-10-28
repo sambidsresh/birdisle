@@ -441,6 +441,9 @@ mstime_t mstime(void) {
 }
 
 void exitFromServer(int retcode) {
+    if (server.metafd >= 0) {
+        close(server.metafd);
+    }
     zmalloc_free_all();
     pthread_exit((void *) (intptr_t) retcode);
 }
@@ -2769,7 +2772,7 @@ void closeListeningSockets(int unlink_unix_socket) {
         serverLog(LL_NOTICE,"Removing the unix socket file.");
         unlink(server.unixsocket); /* don't care if this fails */
     }
-    /* The metasocket is closed by birdisleStopServer */
+    /* The metasocket is closed by exitFromServer */
 }
 
 int prepareForShutdown(int flags) {
@@ -4127,6 +4130,7 @@ int redisMain(int metafd, int argc, char **argv, char *config_override) {
     dictSetHashFunctionSeed((uint8_t*)hashseed);
     server.sentinel_mode = checkForSentinelMode(argc,argv);
     initServerConfig();
+    server.metafd = metafd;
     moduleInitModulesSystem();
 
     /* Store the executable path and arguments in a safe place in order
@@ -4243,7 +4247,6 @@ int redisMain(int metafd, int argc, char **argv, char *config_override) {
     int background = server.daemonize && !server.supervised;
     if (background) daemonize();
 
-    server.metafd = metafd;
     initServer();
     if (background || server.pidfile) createPidFile();
 #if 0  /* Disabled for birdisle */
@@ -4272,6 +4275,15 @@ int redisMain(int metafd, int argc, char **argv, char *config_override) {
             serverLog(LL_NOTICE,"Ready to accept connections");
         if (server.sofd > 0)
             serverLog(LL_NOTICE,"The server is now ready to accept connections at %s", server.unixsocket);
+        if (server.metafd > 0) {
+            char ready = 1;
+            if (anetWrite(server.metafd, &ready, 1) != 1) {
+                serverLog(LL_WARNING,"Could not indicate readiness on the metasocket (%s)",
+                    strerror(errno));
+            } else {
+                serverLog(LL_NOTICE,"The server is now ready to accept metasocket connections");
+            }
+        }
     } else {
         sentinelIsRunning();
     }
@@ -4285,7 +4297,7 @@ int redisMain(int metafd, int argc, char **argv, char *config_override) {
     aeSetAfterSleepProc(server.el,afterSleep);
     aeMain(server.el);
     aeDeleteEventLoop(server.el);
-    return 0;
+    exitFromServer(0);
 }
 
 /* The End */

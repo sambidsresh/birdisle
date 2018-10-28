@@ -24,12 +24,13 @@ void *serverThread(void *arg) {
 
 birdisleServer *birdisleStartServer(const char *config) {
     int err;
+    int close_fd = 1;   /* Whether we should close the server's side of metafd */
 
     if (!config)
         config = "";
     birdisleServer *handle = zmalloc(sizeof(birdisleServer));
     handle->config = zstrdup(config);
-    if (pipe(handle->metafd) == -1) {
+    if (socketpair(AF_LOCAL, SOCK_STREAM, 0, handle->metafd) == -1) {
         goto error1;
     }
     if ((err = pthread_mutex_init(&handle->mutex, NULL)) != 0) {
@@ -40,12 +41,34 @@ birdisleServer *birdisleStartServer(const char *config) {
         errno = err;
         goto error3;
     }
+    close_fd = 0;
+
+    /* Wait for the server to indicate it is ready for connections, or die */
+    while (1) {
+        char ready;
+        int status;
+        status = anetRead(handle->metafd[1], &ready, 1);
+        if (status == 1) {
+            break;
+        } else if (status != -1) {
+            /* The server closed the metasocket without indicating readiness */
+            errno = 0;
+            goto error4;
+        } else if (errno != EINTR) {
+            goto error4;
+        }
+    }
+
     return handle;
 
+error4:
+    pthread_join(handle->thread, NULL);
 error3:
     pthread_mutex_destroy(&handle->mutex);
 error2:
-    close(handle->metafd[0]);
+    if (close_fd) {
+        close(handle->metafd[0]);
+    }
     close(handle->metafd[1]);
 error1:
     zfree(handle->config);
@@ -60,7 +83,6 @@ int birdisleStopServer(birdisleServer *handle) {
     anetWrite(handle->metafd[1], (char *) &stop, sizeof(stop));
     if ((err = pthread_join(handle->thread, &exit_code)) != 0)
         return -1;
-    close(handle->metafd[0]);
     close(handle->metafd[1]);
     zfree(handle->config);
     zfree(handle);
