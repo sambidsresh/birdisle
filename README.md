@@ -53,7 +53,6 @@ Specific variances from stock redis include
   or ``SHUTDOWN``.
 - AOF files have limited support. It cannot be enabled after the server has
   started, and rewriting (e.g. with ``BGREWRITEAOF``) is not supported.
-- Memory overheads are higher (in some cases, significantly higher).
 - It does not catch signals. If a graceful shutdown is required, the host
   process must catch and handle the signal.
 - Logging is disabled by default.
@@ -66,5 +65,5 @@ use them fail gracefully.
 
 ## Status
 
-Birdisle is still in **very** early development, and is likely to still contain
+Birdisle is still in very early development, and is likely to still contain
 bugs and rough edges. Bug reports and pull requests are welcome.

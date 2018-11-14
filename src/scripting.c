@@ -46,6 +46,7 @@ char *redisProtocolToLuaType_MultiBulk(lua_State *lua, char *reply);
 int redis_math_random (lua_State *L);
 int redis_math_randomseed (lua_State *L);
 void ldbInit(void);
+void ldbDone(void);
 void ldbDisable(client *c);
 void ldbEnable(client *c);
 void evalGenericCommandWithDebugging(client *c, int evalsha);
@@ -1084,14 +1085,20 @@ void scriptingInit(int setup) {
 
 /* Release resources related to Lua scripting.
  * This function is used in order to reset the scripting environment. */
-void scriptingRelease(void) {
+void scriptingRelease(int teardown) {
     dictRelease(server.lua_scripts);
     server.lua_scripts_mem = 0;
+    if (teardown) {
+        ldbDone();
+        if (server.lua_client != NULL) {
+            freeClient(server.lua_client);
+        }
+    }
     lua_close(server.lua);
 }
 
 void scriptingReset(void) {
-    scriptingRelease();
+    scriptingRelease(0);
     scriptingInit(0);
 }
 
@@ -1567,6 +1574,18 @@ void ldbInit(void) {
     ldb.src = NULL;
     ldb.lines = 0;
     ldb.cbuf = sdsempty();
+}
+
+/* Free resources allocated by ldbInit */
+void ldbDone(void) {
+    int j;
+    listRelease(ldb.logs);
+    listRelease(ldb.children);
+    if (ldb.src) {
+        for (j = 0; j < ldb.lines; j++) sdsfree(ldb.src[j]);
+        zfree(ldb.src);
+    }
+    sdsfree(ldb.cbuf);
 }
 
 /* Remove all the pending messages in the specified list. */

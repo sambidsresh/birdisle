@@ -444,7 +444,8 @@ void exitFromServer(int retcode) {
     if (server.metafd >= 0) {
         close(server.metafd);
     }
-    zmalloc_free_all();
+    uselocale(LC_GLOBAL_LOCALE);
+    freelocale(server.locale);
     pthread_exit((void *) (intptr_t) retcode);
 }
 
@@ -1526,6 +1527,70 @@ void createSharedObjects(void) {
     shared.maxstring = sdsnew("maxstring");
 }
 
+void freeSharedObjects(void) {
+    int j;
+
+    decrRefCount(shared.crlf);
+    decrRefCount(shared.ok);
+    decrRefCount(shared.err);
+    decrRefCount(shared.emptybulk);
+    decrRefCount(shared.czero);
+    decrRefCount(shared.cone);
+    decrRefCount(shared.cnegone);
+    decrRefCount(shared.nullbulk);
+    decrRefCount(shared.nullmultibulk);
+    decrRefCount(shared.emptymultibulk);
+    decrRefCount(shared.pong);
+    decrRefCount(shared.queued);
+    decrRefCount(shared.emptyscan);
+    decrRefCount(shared.wrongtypeerr);
+    decrRefCount(shared.nokeyerr);
+    decrRefCount(shared.syntaxerr);
+    decrRefCount(shared.sameobjecterr);
+    decrRefCount(shared.outofrangeerr);
+    decrRefCount(shared.noscripterr);
+    decrRefCount(shared.loadingerr);
+    decrRefCount(shared.slowscripterr);
+    decrRefCount(shared.masterdownerr);
+    decrRefCount(shared.bgsaveerr);
+    decrRefCount(shared.roslaveerr);
+    decrRefCount(shared.noautherr);
+    decrRefCount(shared.oomerr);
+    decrRefCount(shared.execaborterr);
+    decrRefCount(shared.noreplicaserr);
+    decrRefCount(shared.busykeyerr);
+    decrRefCount(shared.space);
+    decrRefCount(shared.colon);
+    decrRefCount(shared.plus);
+    for (j = 0; j < PROTO_SHARED_SELECT_CMDS; j++) {
+        decrRefCount(shared.select[j]);
+    }
+    decrRefCount(shared.messagebulk);
+    decrRefCount(shared.pmessagebulk);
+    decrRefCount(shared.subscribebulk);
+    decrRefCount(shared.unsubscribebulk);
+    decrRefCount(shared.psubscribebulk);
+    decrRefCount(shared.punsubscribebulk);
+    decrRefCount(shared.del);
+    decrRefCount(shared.unlink);
+    decrRefCount(shared.rpop);
+    decrRefCount(shared.lpop);
+    decrRefCount(shared.lpush);
+    decrRefCount(shared.rpoplpush);
+    decrRefCount(shared.zpopmin);
+    decrRefCount(shared.zpopmax);
+    for (j = 0; j < OBJ_SHARED_INTEGERS; j++) {
+        /* decrRefCount doesn't work because it's a shared object */
+        zfree(shared.integers[j]);
+    }
+    for (j = 0; j < OBJ_SHARED_BULKHDR_LEN; j++) {
+        decrRefCount(shared.mbulkhdr[j]);
+        decrRefCount(shared.bulkhdr[j]);
+    }
+    sdsfree(shared.minstring);
+    sdsfree(shared.maxstring);
+}
+
 void initServerConfig(void) {
     int j;
 
@@ -1737,6 +1802,61 @@ void initServerConfig(void) {
      * script to the slave / AOF. This is the new way starting from
      * Redis 5. However it is possible to revert it via redis.conf. */
     server.lua_always_replicate_commands = 1;
+}
+
+void freeServer(void) {
+    int j;
+
+    listRelease(server.clients);
+    raxFree(server.clients_index);
+    listRelease(server.clients_to_close);
+    listRelease(server.slaves);
+    listRelease(server.monitors);
+    listRelease(server.clients_pending_write);
+    listRelease(server.unblocked_clients);
+    listRelease(server.ready_keys);
+    listRelease(server.clients_waiting_acks);
+    dictRelease(server.pubsub_channels);
+    listRelease(server.pubsub_patterns);
+    listRelease(server.aof_rewrite_buf_blocks);
+    listRelease(server.slowlog);
+    dictRelease(server.latency_events);
+
+    sdsfree(server.aof_buf);
+    for (j = 0; server.exec_argv[j]; j++) zfree(server.exec_argv[j]);
+    zfree(server.exec_argv);
+    sdsfree(server.executable);
+
+    for (j = 0; j < server.dbnum; j++) {
+        dictRelease(server.db[j].dict);
+        dictRelease(server.db[j].expires);
+        dictRelease(server.db[j].blocking_keys);
+        dictRelease(server.db[j].ready_keys);
+        dictRelease(server.db[j].watched_keys);
+        listRelease(server.db[j].defrag_later);
+    }
+    zfree(server.db);
+
+    pthread_mutex_destroy(&server.next_client_id_mutex);
+    pthread_mutex_destroy(&server.lruclock_mutex);
+    pthread_mutex_destroy(&server.unixtime_mutex);
+
+    zfree(server.configfile);
+    zfree(server.logfile);
+    zfree(server.syslog_ident);
+    zfree(server.pidfile);
+    zfree(server.rdb_filename);
+    zfree(server.aof_filename);
+    zfree(server.requirepass);
+    zfree(server.cluster_configfile);
+    dictRelease(server.migrate_cached_sockets);
+    zfree(server.masterauth);
+    zfree(server.masterhost);
+    /* TODO: not sure about master and cached_master - it might not be safe to
+     * free them here, and birdisle doesn't support replication anyway.
+     */
+    dictRelease(server.commands);
+    dictRelease(server.orig_commands);
 }
 
 extern char **environ;
@@ -2852,13 +2972,18 @@ int prepareForShutdown(int flags) {
     /* Close the listening sockets. Apparently this allows faster restarts. */
     closeListeningSockets(1);
 
-    /* Free other resources not allocated via zmalloc (including file handles) */
-    moduleReleaseModulesSystem();
-    scriptingRelease();
-    aeDeleteEventLoop(server.el);
-
     serverLog(LL_WARNING,"%s is now ready to exit, bye bye...",
         server.sentinel_mode ? "Sentinel" : "Redis");
+
+    /* Free other resources */
+    moduleReleaseModulesSystem();
+    scriptingRelease(1);
+    replicationScriptCacheDone();
+    evictionPoolFree();
+    aeDeleteEventLoop(server.el);
+    freeSharedObjects();
+    freeServer();
+
     return C_OK;
 }
 
@@ -4076,9 +4201,7 @@ static void setupLocale(void)
         loc = posix;
     }
     uselocale(loc);
-    /* TODO: the locale leaks. We need to save it and free it during shutdown,
-     * or make it global and initialise it with pthread_once.
-     */
+    server.locale = loc;
 }
 
 int redisMain(int metafd, int argc, char **argv, char *config_override) {
