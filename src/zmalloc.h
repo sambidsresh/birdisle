@@ -40,7 +40,7 @@
 #include <google/tcmalloc.h>
 #if (TC_VERSION_MAJOR == 1 && TC_VERSION_MINOR >= 6) || (TC_VERSION_MAJOR > 1)
 #define HAVE_MALLOC_SIZE 1
-#define zmalloc_size_impl(p) tc_malloc_size(p)
+#define zmalloc_size(p) tc_malloc_size(p)
 #else
 #error "Newer version of tcmalloc required"
 #endif
@@ -50,7 +50,7 @@
 #include <jemalloc/jemalloc.h>
 #if (JEMALLOC_VERSION_MAJOR == 2 && JEMALLOC_VERSION_MINOR >= 1) || (JEMALLOC_VERSION_MAJOR > 2)
 #define HAVE_MALLOC_SIZE 1
-#define zmalloc_size_impl(p) je_malloc_usable_size(p)
+#define zmalloc_size(p) je_malloc_usable_size(p)
 #else
 #error "Newer version of jemalloc required"
 #endif
@@ -58,7 +58,7 @@
 #elif defined(__APPLE__)
 #include <malloc/malloc.h>
 #define HAVE_MALLOC_SIZE 1
-#define zmalloc_size_impl(p) malloc_size(p)
+#define zmalloc_size(p) malloc_size(p)
 #endif
 
 #ifndef ZMALLOC_LIB
@@ -66,7 +66,7 @@
 #ifdef __GLIBC__
 #include <malloc.h>
 #define HAVE_MALLOC_SIZE 1
-#define zmalloc_size_impl(p) malloc_usable_size(p)
+#define zmalloc_size(p) malloc_usable_size(p)
 #endif
 #endif
 
@@ -90,7 +90,6 @@ size_t zmalloc_get_private_dirty(long pid);
 size_t zmalloc_get_smap_bytes_by_field(char *field, long pid);
 size_t zmalloc_get_memory_size(void);
 void zlibc_free(void *ptr);
-void zmalloc_free_all(void);
 
 #ifdef HAVE_DEFRAG
 void zfree_no_tcache(void *ptr);
@@ -98,10 +97,11 @@ void *zmalloc_no_tcache(size_t size);
 #endif
 
 #ifndef HAVE_MALLOC_SIZE
-size_t zmalloc_size_impl(void *ptr);
-#endif
 size_t zmalloc_size(void *ptr);
 size_t zmalloc_usable(void *ptr);
+#else
+#define zmalloc_usable(p) zmalloc_size(p)
+#endif
 
 #ifdef REDIS_TEST
 int zmalloc_test(int argc, char **argv);
