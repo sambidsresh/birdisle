@@ -655,6 +655,9 @@ typedef struct multiCmd {
 typedef struct multiState {
     multiCmd *commands;     /* Array of MULTI commands */
     int count;              /* Total number of MULTI commands */
+    int cmd_flags;          /* The accumulated command flags OR-ed together.
+                               So if at least a command has a given flag, it
+                               will be set in this field. */
     int minreplicas;        /* MINREPLICAS for synchronous replication */
     time_t minreplicas_timeout; /* MINREPLICAS timeout as unixtime. */
 } multiState;
@@ -865,11 +868,11 @@ struct redisMemOverhead {
     float dataset_perc;
     float peak_perc;
     float total_frag;
-    size_t total_frag_bytes;
+    ssize_t total_frag_bytes;
     float allocator_frag;
-    size_t allocator_frag_bytes;
+    ssize_t allocator_frag_bytes;
     float allocator_rss;
-    size_t allocator_rss_bytes;
+    ssize_t allocator_rss_bytes;
     float rss_extra;
     size_t rss_extra_bytes;
     size_t num_dbs;
@@ -1706,6 +1709,7 @@ int zslLexValueLteMax(sds value, zlexrangespec *spec);
 int getMaxmemoryState(size_t *total, size_t *logical, size_t *tofree, float *level);
 size_t freeMemoryGetNotCountedMemory(void);
 int freeMemoryIfNeeded(void);
+int freeMemoryIfNeededAndSafe(void);
 int processCommand(client *c);
 void setupSignalHandlers(void);
 void blockSignals(void);
