@@ -49,6 +49,7 @@
 #include <lua.h>
 #include <signal.h>
 #include <locale.h>
+#include <xlocale.h>
 
 typedef long long mstime_t; /* millisecond time type. */
 
